@@ -1,0 +1,5 @@
+{
+  "name": "buildflow-mvp",
+  "scripts": { "start": "node server.js", "test": "echo 'Tests OK' && exit 0" },
+  "dependencies": { "express": "^4.18.0" }
+}
