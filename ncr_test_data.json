@@ -1,44 +1,10 @@
-name: BuildFlow CI/CD Pipeline
-on:
-push:
-branches: [ main ]
-pull_request:
-branches: [ main ]
-
-jobs:
-quality-gate:
-runs-on: ubuntu-latest
-steps:
-- name: Checkout code
-uses: actions/checkout@v3
-
-- name: Setup Node.js
-uses: actions/setup-node@v3
-with:
-node-version: '20'
-
-- name: Install dependencies
-run: npm ci
-
-- name: Linting check
-[cite_start]run: npm run lint # Vérification de la qualité du style de code [cite: 332]
-
-- name: Run Unit Tests with Coverage
-[cite_start]run: npm test -- --coverage # Objectif cible : >= 70%
-
-- name: Security Scan (Audit)
-[cite_start]run: npm audit --audit-level=high # Analyse des vulnérabilités [cite: 367]
-
-deploy-staging:
-needs: quality-gate
-if: github.ref == 'refs/heads/main'
-runs-on: ubuntu-latest
-steps:
-- name: Build Docker Image
-run: docker build -t buildflow-ncr-service:latest . # Préparation du conteneur [cite: 347]
-
-- name: Deploy to Staging Environment
-run: |
-echo "Déploiement en cours sur l'environnement de staging..."
-# Simulation du script de déploiement pour le livrable 2
-echo "Déploiement réussi : https://staging.buildflow.io" [cite: 336]
+[
+  {
+    "title": "Fissure dalle",
+    "photos": []
+  },
+  {
+    "title": "Défaut étanchéité",
+    "photos": ["url_photo_1"]
+  }
+]
