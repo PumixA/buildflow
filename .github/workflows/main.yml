@@ -21,10 +21,10 @@ jobs:
         run: npm ci
 
       - name: Linting check
-        run: npm run lint # Vérification de la qualité du style de code
+        run: npm run lint
 
       - name: Run Unit Tests with Coverage
-        [cite_start]run: npm test -- --coverage # Objectif cible : >= 70%
+        run: npm test -- --coverage
 
       - name: Security Scan (Audit)
         run: npm audit --audit-level=high
@@ -40,5 +40,4 @@ jobs:
       - name: Deploy to Staging Environment
         run: |
           echo "Déploiement en cours sur l'environnement de staging..."
-          # Simulation du script de déploiement (SSH ou Cloud provider)
           echo "Déploiement réussi : https://staging.buildflow.io"
