@@ -34,6 +34,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Build Docker Image
         run: docker build -t buildflow-ncr-service:latest .
 
