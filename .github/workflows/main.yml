@@ -1,0 +1,44 @@
+name: BuildFlow CI/CD Pipeline
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Linting check
+        run: npm run lint # Vérification de la qualité du style de code
+
+      - name: Run Unit Tests with Coverage
+        [cite_start]run: npm test -- --coverage # Objectif cible : >= 70%
+
+      - name: Security Scan (Audit)
+        run: npm audit --audit-level=high
+
+  deploy-staging:
+    needs: quality-gate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Docker Image
+        run: docker build -t buildflow-ncr-service:latest .
+
+      - name: Deploy to Staging Environment
+        run: |
+          echo "Déploiement en cours sur l'environnement de staging..."
+          # Simulation du script de déploiement (SSH ou Cloud provider)
+          echo "Déploiement réussi : https://staging.buildflow.io"

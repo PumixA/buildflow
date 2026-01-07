@@ -1,0 +1,16 @@
+{
+  "test_case": "Création de NCR valide",
+  "payload": {
+    "title": "Défaut d'étanchéité - Zone A2",
+    "description": "Fissure détectée après coulage de la dalle.",
+    "project_id": "uuid-projet-lyon-001",
+    "coordinates": { "lat": 45.76, "long": 4.83 },
+    "priority": "HIGH",
+    "status": "OPEN",
+    "sync_status": false
+  },
+  "expected_result": {
+    "status_code": 201,
+    "message": "NCR created and event published"
+  }
+}
