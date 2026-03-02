@@ -33,3 +33,5 @@ coverage/
 
 # Docker (si vous utilisez des volumes locaux)
 .docker/
+
+# Test
