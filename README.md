@@ -71,6 +71,10 @@ Workflows:
   - création/usage de l'émulateur Android,
   - tests qualité,
   - flux Git recommandé et commandes de vérification.
+- Voir `docs/flux-git-fiabilite-complet.md` pour:
+  - le runbook complet du flux `work -> dev -> release -> main`,
+  - les règles PR/CI obligatoires,
+  - la procédure de tag release.
 
 ## Variables d'environnement clés
 
