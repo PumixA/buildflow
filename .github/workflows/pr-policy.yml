@@ -1,0 +1,45 @@
+name: PR Branch Policy
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  branch-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate source branch policy
+        run: |
+          set -euo pipefail
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+
+          if [[ "$BASE" == "dev" ]]; then
+            case "$HEAD" in
+              feat/*|fix/*|chore/*|refactor/*|hotfix/*)
+                echo "OK: $HEAD can target dev."
+                exit 0
+                ;;
+              *)
+                echo "ERROR: PR to dev must come from feat/*, fix/*, chore/*, refactor/* or hotfix/*." >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+          if [[ "$BASE" == "main" ]]; then
+            if [[ "$HEAD" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "OK: $HEAD can target main."
+              exit 0
+            fi
+            echo "ERROR: PR to main must come from release/vX.Y.Z." >&2
+            exit 1
+          fi
+
+          echo "No policy for base branch '$BASE'." >&2
+          exit 1

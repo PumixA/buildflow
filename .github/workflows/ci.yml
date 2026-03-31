@@ -1,9 +1,92 @@
-name: CI BuildFlow
-on: [push]
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - "feat/**"
+      - "fix/**"
+      - "refactor/**"
+      - "chore/**"
+      - "hotfix/**"
+      - "release/**"
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  api:
+    name: api
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: npm install
-      - run: npm run test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tests + coverage
+        run: npm run test:cov
+      - name: Build
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "No build script in this ref, build step skipped."
+          fi
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: ${{ hashFiles('apps/web/package.json') != '' }}
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        if: ${{ hashFiles('apps/web/package.json') != '' }}
+        run: npm ci
+      - name: Build web
+        if: ${{ hashFiles('apps/web/package.json') != '' }}
+        run: npm --workspace apps/web run build
+      - name: Skip web checks if app is absent
+        if: ${{ hashFiles('apps/web/package.json') == '' }}
+        run: echo "apps/web absent in this ref, web checks skipped."
+
+  mobile:
+    name: mobile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        working-directory: apps/mobile-flutter
+        run: flutter pub get
+      - name: Analyze
+        if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        working-directory: apps/mobile-flutter
+        run: flutter analyze
+      - name: Tests
+        if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        working-directory: apps/mobile-flutter
+        run: flutter test
+      - name: Skip mobile checks if app is absent
+        if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') == '' }}
+        run: echo "apps/mobile-flutter absent in this ref, mobile checks skipped."
