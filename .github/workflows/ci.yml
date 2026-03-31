@@ -32,7 +32,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
       - name: Install dependencies
         run: npm ci
       - name: Lint
@@ -51,7 +50,6 @@ jobs:
         if: ${{ hashFiles('apps/web/package.json') != '' }}
         with:
           node-version: "20"
-          cache: npm
       - name: Install dependencies
         if: ${{ hashFiles('apps/web/package.json') != '' }}
         run: npm ci
@@ -65,9 +63,6 @@ jobs:
   mobile:
     name: mobile
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/mobile-flutter
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -77,12 +72,15 @@ jobs:
           cache: true
       - name: Install dependencies
         if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        working-directory: apps/mobile-flutter
         run: flutter pub get
       - name: Analyze
         if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        working-directory: apps/mobile-flutter
         run: flutter analyze
       - name: Tests
         if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') != '' }}
+        working-directory: apps/mobile-flutter
         run: flutter test
       - name: Skip mobile checks if app is absent
         if: ${{ hashFiles('apps/mobile-flutter/pubspec.yaml') == '' }}
