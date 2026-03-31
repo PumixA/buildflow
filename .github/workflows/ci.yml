@@ -39,7 +39,12 @@ jobs:
       - name: Tests + coverage
         run: npm run test:cov
       - name: Build
-        run: npm run build
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "No build script in this ref, build step skipped."
+          fi
 
   web:
     name: web
