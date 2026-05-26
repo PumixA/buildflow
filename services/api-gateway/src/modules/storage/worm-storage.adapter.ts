@@ -24,7 +24,14 @@ export class WormStorageAdapter {
   private readonly storage = new Map<string, EvidenceObject>();
   private readonly bucket = process.env.S3_WORM_BUCKET ?? '';
   private readonly region = process.env.S3_REGION ?? 'eu-west-3';
-  private readonly s3Client = this.bucket ? new S3Client({ region: this.region }) : null;
+  private readonly endpoint = process.env.S3_ENDPOINT;
+  private readonly s3Client = this.bucket
+    ? new S3Client({
+        region: this.region,
+        endpoint: this.endpoint,
+        forcePathStyle: Boolean(this.endpoint)
+      })
+    : null;
 
   async storeEvidence(input: StoreEvidenceInput): Promise<EvidenceObject> {
     const id = `evidence-${this.storage.size + 1}`;
