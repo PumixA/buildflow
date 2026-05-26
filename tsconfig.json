@@ -4,7 +4,20 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "types": ["node", "jest"],
     "strict": true,
     "skipLibCheck": true
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "services/**/*.ts",
+    "libs/**/*.ts",
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "apps/**/*.js"
+  ]
 }

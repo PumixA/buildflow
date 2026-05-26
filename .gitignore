@@ -31,5 +31,16 @@ Thumbs.db
 coverage/
 .nyc_output
 
+# Build web/mobile
+apps/web/.next/
+apps/web/node_modules/
+apps/web/out/
+apps/mobile-flutter/.dart_tool/
+apps/mobile-flutter/build/
+apps/mobile-flutter/.packages
+apps/mobile-flutter/.flutter-plugins
+apps/mobile-flutter/.flutter-plugins-dependencies
+apps/mobile-flutter/.metadata
+
 # Docker (si vous utilisez des volumes locaux)
 .docker/
