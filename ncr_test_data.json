@@ -1,10 +1,38 @@
 [
   {
     "title": "Fissure dalle",
-    "photos": []
+    "description": "Fissure majeure sur dalle béton",
+    "projectId": "",
+    "creatorId": "USR-001",
+    "photos": [],
+    "latitude": 48.8924,
+    "longitude": 2.236
   },
   {
     "title": "Défaut étanchéité",
-    "photos": ["url_photo_1"]
+    "description": "Défaut relevé toiture terrasse",
+    "projectId": "PROJ-001",
+    "creatorId": "USR-002",
+    "photos": ["url_photo_1"],
+    "latitude": 48.8924,
+    "longitude": 2.236
+  },
+  {
+    "title": "GPS invalide",
+    "description": "Coordonnées hors bornes",
+    "projectId": "PROJ-002",
+    "creatorId": "USR-003",
+    "photos": ["url_photo_2"],
+    "latitude": 124.55,
+    "longitude": 2.236
+  },
+  {
+    "title": "Image corrompue",
+    "description": "Fichier photo illisible",
+    "projectId": "PROJ-003",
+    "creatorId": "USR-004",
+    "photos": [""],
+    "latitude": 45.764,
+    "longitude": 4.836
   }
 ]

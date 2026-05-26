@@ -1,0 +1,36 @@
+[
+  {
+    "case": "missing_project_id",
+    "payload": {
+      "title": "Défaut garde-corps",
+      "description": "Absence de protection collective",
+      "projectId": "",
+      "creatorId": "USR-001",
+      "photos": ["img://proof-1"],
+      "latitude": 48.8924,
+      "longitude": 2.236
+    }
+  },
+  {
+    "case": "missing_gps",
+    "payload": {
+      "title": "Fuite d'eau",
+      "description": "Infiltration en zone technique",
+      "projectId": "PROJ-001",
+      "creatorId": "USR-001",
+      "photos": ["img://proof-2"]
+    }
+  },
+  {
+    "case": "corrupted_image",
+    "payload": {
+      "title": "Image corrompue",
+      "description": "Payload image vide",
+      "projectId": "PROJ-001",
+      "creatorId": "USR-001",
+      "photos": [""],
+      "latitude": 48.8924,
+      "longitude": 2.236
+    }
+  }
+]
