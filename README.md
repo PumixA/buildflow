@@ -2,6 +2,50 @@
 
 Plateforme BuildFlow orientée Qualité (NCR), Sécurité (HSE), offline-first et traçabilité.
 
+## Démarrage Docker local avec rechargement
+
+Mode local calqué sur le fonctionnement avec bind mounts : les changements faits dans le code sont montés directement dans les conteneurs.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local-dev.yml up --build --watch
+```
+
+Après le premier build, relance simple sans rebuild :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local-dev.yml up --watch
+```
+
+- API en watch : http://localhost:3000/health
+- Web Next dev : http://localhost:3001
+
+## Démarrage Docker complet
+
+Un seul lancement démarre l’API, le back-office web, PostgreSQL, RabbitMQ et MinIO :
+
+```bash
+docker compose up --build
+```
+
+Accès locaux :
+
+- Web : http://localhost:3001
+- API : http://localhost:3000/health
+- RabbitMQ Management : http://localhost:15672 (`guest` / `guest`)
+- MinIO Console : http://localhost:9001 (`buildflow` / `buildflow-secret`)
+
+Arrêt :
+
+```bash
+docker compose down
+```
+
+Réinitialisation des volumes PostgreSQL/MinIO :
+
+```bash
+docker compose down -v
+```
+
 ## Démarrage rapide (API Gateway)
 
 1. `npm install`
