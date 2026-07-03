@@ -11,4 +11,9 @@ export class AuditController {
   logs() {
     return this.auditService.list();
   }
+
+  @Get('verify')
+  verify() {
+    return this.auditService.verifyChain();
+  }
 }

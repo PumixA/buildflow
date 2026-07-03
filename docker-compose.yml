@@ -60,6 +60,7 @@ services:
       OIDC_PROVIDER: http://localhost:8080
       OIDC_ISSUER: http://localhost:8080/realms/buildflow
       OIDC_AUDIENCE: buildflow-api
+      OIDC_JWKS_URI: http://localhost:8080/realms/buildflow/protocol/openid-connect/certs
       OIDC_REQUIRE_MFA: "false"
       S3_REGION: eu-west-3
       S3_ENDPOINT: http://minio:9000

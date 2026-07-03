@@ -48,6 +48,48 @@ export class AuditService {
     return [...this.entries];
   }
 
+  verifyChain(): { valid: boolean; errors: Array<{ index: number; id: string; expected: string; actual: string }> } {
+    const errors: Array<{ index: number; id: string; expected: string; actual: string }> = [];
+
+    for (let i = 0; i < this.entries.length; i++) {
+      const entry = this.entries[i];
+      const previousHash = i === 0 ? 'GENESIS' : this.entries[i - 1].hash;
+
+      if (entry.previousHash !== previousHash) {
+        errors.push({
+          index: i,
+          id: entry.id,
+          expected: previousHash,
+          actual: entry.previousHash
+        });
+      }
+
+      const raw = JSON.stringify({
+        id: entry.id,
+        eventType: entry.eventType,
+        actorId: entry.actorId,
+        payload: entry.payload,
+        timestamp: entry.timestamp,
+        previousHash: entry.previousHash
+      });
+      const recomputed = createHash('sha256').update(raw).digest('hex');
+
+      if (recomputed !== entry.hash) {
+        errors.push({
+          index: i,
+          id: entry.id,
+          expected: recomputed,
+          actual: entry.hash
+        });
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
   private loadFromDisk(): void {
     if (!existsSync(this.filePath)) {
       return;

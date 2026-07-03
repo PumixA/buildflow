@@ -1,5 +1,9 @@
+'use client';
+
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { ReactNode, useEffect } from 'react';
+import { useAuth } from '../lib/auth';
 
 type DashboardShellProps = {
   title: string;
@@ -7,6 +11,18 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({ title, children }: DashboardShellProps) {
+  const { isAuthenticated, email, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
   return (
     <main className="app-shell">
       <aside className="app-sidebar">
@@ -35,9 +51,13 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
       <section className="app-content">
         <header className="topbar">
           <h1>{title}</h1>
-          <p>
-            Chantier actif: <strong>Paris - La Défense T4</strong>
-          </p>
+          <div className="topbar-right">
+            <p>
+              Chantier actif: <strong>Paris - La Défense T4</strong>
+            </p>
+            {email && <span className="user-email">{email}</span>}
+            <button onClick={logout} className="btn-logout">Déconnexion</button>
+          </div>
         </header>
         {children}
       </section>

@@ -7,23 +7,11 @@ services:
     command: npm run start:dev
     environment:
       NODE_ENV: development
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /usr/src/app
-          ignore:
-            - .git/
-            - node_modules/
-            - dist/
-            - coverage/
-            - apps/web/node_modules/
-            - apps/web/.next/
-            - apps/mobile-flutter/build/
-        - action: rebuild
-          path: package.json
-        - action: rebuild
-          path: package-lock.json
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/apps/web/node_modules
+      - /usr/src/app/apps/web/.next
 
   web:
     build:
@@ -33,18 +21,10 @@ services:
     command: npm --workspace apps/web run dev -- --hostname 0.0.0.0
     environment:
       NODE_ENV: development
-      API_BASE_URL: http://api:3000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
-    develop:
-      watch:
-        - action: sync
-          path: ./apps/web
-          target: /usr/src/app/apps/web
-          ignore:
-            - node_modules/
-            - .next/
-        - action: rebuild
-          path: apps/web/package.json
-        - action: rebuild
-          path: package-lock.json
+    volumes:
+      - ./apps/web:/usr/src/app/apps/web
+      - /usr/src/app/apps/web/node_modules
+      - /usr/src/app/apps/web/.next

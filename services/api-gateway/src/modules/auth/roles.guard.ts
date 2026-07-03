@@ -47,15 +47,17 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Rôle insuffisant');
     }
 
-    const role = request.headers['x-role'];
-    if (!role) {
-      throw new UnauthorizedException('Token Bearer ou en-tête x-role requis');
+    if (process.env.NODE_ENV === 'development') {
+      const role = request.headers['x-role'];
+      if (role) {
+        console.warn(`[DEV] x-role bypass used: ${role} for endpoint requiring ${requiredRoles.join(', ')}`);
+        if (!requiredRoles.includes(role as Role)) {
+          throw new ForbiddenException('Rôle insuffisant');
+        }
+        return true;
+      }
     }
 
-    if (!requiredRoles.includes(role as Role)) {
-      throw new ForbiddenException('Rôle insuffisant');
-    }
-
-    return true;
+    throw new UnauthorizedException('Authentification requise — token Bearer manquant');
   }
 }

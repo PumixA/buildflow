@@ -19,22 +19,35 @@ export class OidcVerifierService {
 
   async verifyBearerToken(token: string): Promise<VerifiedIdentity | null> {
     if (!this.jwks) {
+      console.warn('[OIDC] JWKS URI is not configured — all Bearer token verification will fail. Set OIDC_JWKS_URI.');
       return null;
     }
 
-    const { payload } = await jwtVerify(token, this.jwks, {
-      issuer: this.issuer,
-      audience: this.audience
-    });
+    if (!this.issuer) {
+      console.warn('[OIDC] OIDC_ISSUER is not configured — token issuer will not be verified.');
+    }
+    if (!this.audience) {
+      console.warn('[OIDC] OIDC_AUDIENCE is not configured — token audience will not be verified.');
+    }
 
-    const roles = this.extractRoles(payload);
-    const mfaValidated = this.extractMfa(payload);
-    return {
-      sub: String(payload.sub ?? ''),
-      roles,
-      mfaValidated,
-      payload
-    };
+    try {
+      const verifyOpts: { issuer?: string; audience?: string } = {};
+      if (this.issuer) verifyOpts.issuer = this.issuer;
+      if (this.audience) verifyOpts.audience = this.audience;
+
+      const { payload } = await jwtVerify(token, this.jwks, verifyOpts);
+      const roles = this.extractRoles(payload);
+      const mfaValidated = this.extractMfa(payload);
+      return {
+        sub: String(payload.sub ?? ''),
+        roles,
+        mfaValidated,
+        payload
+      };
+    } catch (err) {
+      console.warn('[OIDC] Token verification failed:', (err as Error).message);
+      return null;
+    }
   }
 
   isMfaCompliant(identity: VerifiedIdentity): boolean {
