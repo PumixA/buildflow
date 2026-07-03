@@ -70,32 +70,46 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
 
     setState(() => _saving = true);
 
-    final report = LocalReport(
-      localId: const Uuid().v4(),
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      severity: _severity,
-      photoPath: _photo?.path,
-      latitude: _latitude,
-      longitude: _longitude,
-      status: 'PENDING',
-      version: 1,
-      createdAt: DateTime.now().toIso8601String()
-    );
-
-    await LocalStore.instance.savePendingReport(report);
-
-    if (mounted) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('NCR enregistrée en local — en attente de synchronisation'),
-          backgroundColor: Color(0xFFFF9800)
-        )
+    try {
+      final report = LocalReport(
+        localId: const Uuid().v4(),
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        severity: _severity,
+        photoPath: _photo?.path,
+        latitude: _latitude,
+        longitude: _longitude,
+        status: 'PENDING',
+        version: 1,
+        createdAt: DateTime.now().toIso8601String()
       );
-      _titleController.clear();
-      _descriptionController.clear();
-      setState(() => _photo = null);
+
+      await LocalStore.instance.savePendingReport(report);
+
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _photo = null;
+        });
+        _titleController.clear();
+        _descriptionController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('NCR enregistrée en local — en attente de synchronisation'),
+            backgroundColor: Color(0xFFFF9800)
+          )
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString().substring(0, 100)}'),
+            backgroundColor: Colors.red
+          )
+        );
+      }
     }
   }
 
