@@ -30,13 +30,15 @@ export class NcrService {
     if (fromMemory.length > 0) return fromMemory;
 
     // Fallback: load from DB into memory
-    if (!this.databaseService.enabled) return [];
+    if (!this.databaseService.enabled) { console.warn('[NcrService] DB not enabled, returning empty'); return []; }
     try {
+      console.log('[NcrService] Loading NCRs from DB...');
       const result = await this.databaseService.query(
         `SELECT id, project_id, creator_id, title, description, status, priority,
                 latitude, longitude, sync_status, local_id, version, created_at, updated_at
          FROM ncr ORDER BY created_at DESC LIMIT 100`
       );
+      console.log('[NcrService] DB returned', result.rows.length, 'rows');
       return (result.rows as Array<Record<string, unknown>>).map((row) => ({
         id: String(row['id']).substring(0, 8),
         projectId: String(row['project_id'] ?? ''),
@@ -57,7 +59,8 @@ export class NcrService {
         correctiveTasks: [],
         history: []
       })) as ManagedNcr[];
-    } catch {
+    } catch (err) {
+      console.error('[NcrService] DB query failed:', (err as Error).message);
       return [];
     }
   }
