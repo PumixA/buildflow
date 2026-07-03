@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
 import { PushSyncDto, ResolveSyncDto } from './dto/sync.dto';
 import { SyncService } from './sync.service';
