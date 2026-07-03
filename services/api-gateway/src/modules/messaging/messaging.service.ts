@@ -22,6 +22,36 @@ export class MessagingService implements OnModuleDestroy {
     });
   }
 
+  async consume(
+    queue: string,
+    topics: string[],
+    handler: (event: DomainEvent) => Promise<void>
+  ): Promise<void> {
+    if (!this.amqpUrl) {
+      return;
+    }
+
+    const channel = await this.getChannel();
+    await channel.assertExchange(this.exchange, 'topic', { durable: true });
+    const { queue: queueName } = await channel.assertQueue(queue, { durable: true });
+
+    for (const topic of topics) {
+      await channel.bindQueue(queueName, this.exchange, topic);
+    }
+
+    await channel.consume(queueName, async (msg) => {
+      if (!msg) return;
+      try {
+        const event = JSON.parse(msg.content.toString()) as DomainEvent;
+        await handler(event);
+        channel.ack(msg);
+      } catch (err) {
+        console.warn(`[Messaging] Handler failed for queue ${queue}:`, (err as Error).message);
+        channel.nack(msg, false, false); // dead-letter (reject without requeue)
+      }
+    });
+  }
+
   async onModuleDestroy(): Promise<void> {
     if (this.channel) {
       await this.channel.close();

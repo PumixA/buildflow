@@ -1,7 +1,8 @@
 import { mockHseActivity, mockHseKpi, mockNcrList } from './mock-data';
 import { HseActivity, HseKpi, NcrItem } from './types';
+import { getAuthHeaders } from './auth';
 
-const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
 
 type BackendNcr = {
   id: string;
@@ -47,9 +48,7 @@ async function safeJson<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       cache: 'no-store',
-      headers: {
-        'x-role': 'RESPONSABLE_QSE'
-      }
+      headers: getAuthHeaders()
     });
     if (!response.ok) {
       return null;

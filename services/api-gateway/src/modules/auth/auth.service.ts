@@ -11,23 +11,31 @@ export class AuthService {
     return this.domainService.getConfig();
   }
 
-  createSession(input: { email: string; password: string; mfaCode?: string }): ReturnType<DomainAuthService['createSession']> {
+  async createSession(input: { email: string; password: string; mfaCode?: string }): Promise<ReturnType<DomainAuthService['createSession']>> {
     return this.domainService.createSession(input);
   }
 
   async validateBearerToken(token: string): Promise<{ valid: boolean; roles: string[]; mfaValidated: boolean }> {
+    // Try OIDC remote verification first
     const identity = await this.oidcVerifier.verifyBearerToken(token);
-    if (!identity) {
+    if (identity) {
       return {
-        valid: false,
-        roles: [],
-        mfaValidated: false
+        valid: true,
+        roles: identity.roles,
+        mfaValidated: identity.mfaValidated
       };
     }
+
+    // Fallback: verify locally-signed JWT (dev mode)
+    const local = await this.domainService.verifyLocalToken(token);
+    if (local.valid) {
+      return local;
+    }
+
     return {
-      valid: true,
-      roles: identity.roles,
-      mfaValidated: identity.mfaValidated
+      valid: false,
+      roles: [],
+      mfaValidated: false
     };
   }
 }
