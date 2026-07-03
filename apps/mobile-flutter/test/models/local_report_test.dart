@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('LocalReport toDbMap and fromDbMap roundtrip', () {
-    final report = LocalReport(
+    const report = LocalReport(
       localId: 'test-123', title: 'Test NCR', description: 'Description',
       severity: 'MAJOR', photoPath: '/tmp/p.jpg',
       latitude: 48.85, longitude: 2.35,

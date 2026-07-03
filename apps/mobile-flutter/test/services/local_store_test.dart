@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('LocalReport model has GPS and photo fields', () {
-    final report = LocalReport(
+    const report = LocalReport(
       localId: 'id-1', title: 'Test', description: 'Desc',
       severity: 'MAJOR', photoPath: '/p.jpg',
       latitude: 48.85, longitude: 2.35,

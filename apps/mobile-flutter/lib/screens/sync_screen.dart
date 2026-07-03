@@ -87,7 +87,7 @@ class _SyncScreenState extends State<SyncScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text('${item['title']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          Text('${item['severity']}', style: const TextStyle(color: Color(0xFF8EA5C5))),
+                                          Text(item['severity'] as String? ?? '', style: const TextStyle(color: Color(0xFF8EA5C5))),
                                           Text(
                                             '${(item['created_at'] as String? ?? '').substring(0, 16)}',
                                             style: const TextStyle(color: Color(0xFF8EA5C5), fontSize: 12)
