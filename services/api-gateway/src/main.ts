@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 
 // OpenTelemetry auto-instrumentation (dev/prod via OTLP)
+/* eslint-disable @typescript-eslint/no-var-requires */
 if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
   const { NodeSDK } = require('@opentelemetry/sdk-node');
   const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
@@ -13,6 +14,7 @@ if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
   sdk.start();
   console.log('[OTel] Tracing enabled ->', process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
 }
+/* eslint-enable @typescript-eslint/no-var-requires */
 
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
