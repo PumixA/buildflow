@@ -7,14 +7,14 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../../../../../libs/domain/src/models';
-import { OidcVerifierService } from './oidc-verifier.service';
+import { AuthService } from './auth.service';
 import { ROLES_KEY } from './roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly oidcVerifier: OidcVerifierService
+    private readonly authService: AuthService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,14 +34,14 @@ export class RolesGuard implements CanActivate {
     const authorization = request.headers.authorization;
     if (authorization?.startsWith('Bearer ')) {
       const token = authorization.replace('Bearer ', '');
-      const identity = await this.oidcVerifier.verifyBearerToken(token);
-      if (!identity) {
+      const result = await this.authService.validateBearerToken(token);
+      if (!result.valid) {
         throw new UnauthorizedException('Token invalide');
       }
-      if (!this.oidcVerifier.isMfaCompliant(identity)) {
+      if (!result.mfaValidated && requiredRoles.length > 0) {
         throw new ForbiddenException('MFA requis');
       }
-      if (identity.roles.some((role) => requiredRoles.includes(role))) {
+      if (result.roles.some((role) => requiredRoles.includes(role as Role))) {
         return true;
       }
       throw new ForbiddenException('Rôle insuffisant');
