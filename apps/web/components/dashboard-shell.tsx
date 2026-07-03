@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 
 type DashboardShellProps = {
@@ -13,18 +13,17 @@ type DashboardShellProps = {
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, logout } = useAuth();
   const router = useRouter();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    setReady(true);
     if (!isAuthenticated) {
-      router.push('/login');
+      router.replace('/login');
     }
-  }, [isAuthenticated, router]);
+  }, []);
 
-  if (!isAuthenticated) {
-    return null;
-  }
   return (
-    <main className="app-shell">
+    <main className="app-shell" suppressHydrationWarning>
       <aside className="app-sidebar">
         <div className="brand">
           <span className="brand-icon">▣</span>
@@ -32,15 +31,9 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         </div>
         <div className="menu-group">
           <p className="menu-title">WEB (ADMINISTRATION)</p>
-          <Link href="/hse" className="menu-link">
-            Tableau de Bord HSE
-          </Link>
-          <Link href="/ncr" className="menu-link">
-            Liste des NCR
-          </Link>
-          <Link href="/ncr/NCR-2024-0155" className="menu-link">
-            Fiche Détail NCR
-          </Link>
+          <Link href="/hse" className="menu-link">Tableau de Bord HSE</Link>
+          <Link href="/ncr" className="menu-link">Liste des NCR</Link>
+          <Link href="/ncr/NCR-2024-0155" className="menu-link">Fiche Détail NCR</Link>
         </div>
         <div className="menu-group">
           <p className="menu-title">MOBILE (TERRAIN)</p>
@@ -52,11 +45,9 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         <header className="topbar">
           <h1>{title}</h1>
           <div className="topbar-right">
-            <p>
-              Chantier actif: <strong>Paris - La Défense T4</strong>
-            </p>
+            <p>Chantier actif: <strong>Paris - La Défense T4</strong></p>
             {email && <span className="user-email">{email}</span>}
-            <button onClick={logout} className="btn-logout">Déconnexion</button>
+            {ready && <button onClick={logout} className="btn-logout">Déconnexion</button>}
           </div>
         </header>
         {children}

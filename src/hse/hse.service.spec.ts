@@ -102,4 +102,29 @@ describe('HSEService', () => {
       })
     ).toThrow('Type incident obligatoire');
   });
+
+  it('doit lister les incidents et filtrer par projet', () => {
+    service.createIncident({
+      projectId: 'PROJ-1', creatorId: 'USR-CHEF', type: 'INCIDENT',
+      severity: 'MAJOR', description: 'Incident A'
+    });
+    service.createIncident({
+      projectId: 'PROJ-2', creatorId: 'USR-CHEF', type: 'NEAR_MISS',
+      severity: 'MINOR', description: 'Incident B'
+    });
+
+    const all = service.listIncidents();
+    expect(all.length).toBe(2);
+
+    const filtered = service.listIncidents('PROJ-1');
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].description).toBe('Incident A');
+
+    const detail = service.getIncidentById(filtered[0].id);
+    expect(detail.description).toBe('Incident A');
+  });
+
+  it('doit lever une erreur pour un incident inexistant', () => {
+    expect(() => service.getIncidentById('INC-404')).toThrow('introuvable');
+  });
 });

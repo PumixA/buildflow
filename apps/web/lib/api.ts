@@ -1,8 +1,9 @@
-import { mockHseActivity, mockHseKpi, mockNcrList } from './mock-data';
 import { HseActivity, HseKpi, NcrItem } from './types';
 import { getAuthHeaders } from './auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
+const API_BASE_URL = typeof window === 'undefined'
+  ? (process.env.API_BASE_URL ?? 'http://localhost:3000')
+  : (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000');
 
 type BackendNcr = {
   id: string;
@@ -60,9 +61,10 @@ async function safeJson<T>(path: string): Promise<T | null> {
 }
 
 export async function fetchNcrList(): Promise<NcrItem[]> {
-  const backendList = await safeJson<BackendNcr[]>('/ncr');
-  if (!backendList) {
-    return mockNcrList;
+  const res = await safeJson<{ items: BackendNcr[] } & Record<string, unknown>>('/ncr');
+  const backendList: BackendNcr[] = res?.items ?? [];
+  if (backendList.length === 0) {
+    return [];
   }
 
   return backendList.map((item) => ({
@@ -81,7 +83,7 @@ export async function fetchNcrList(): Promise<NcrItem[]> {
 export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
   const backendItem = await safeJson<BackendNcr>(`/ncr/${id}`);
   if (!backendItem) {
-    return mockNcrList.find((item) => item.id === id) ?? mockNcrList[0];
+    return null;
   }
 
   return {
@@ -100,10 +102,7 @@ export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
 export async function fetchHseDashboard(): Promise<{ kpi: HseKpi; activity: HseActivity[] }> {
   const backend = await safeJson<BackendHseDashboard>('/hse/dashboard');
   if (!backend) {
-    return {
-      kpi: mockHseKpi,
-      activity: mockHseActivity
-    };
+    return { kpi: { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 }, activity: [] };
   }
 
   const kpi: HseKpi = {

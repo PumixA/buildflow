@@ -24,7 +24,13 @@ export class AuthService {
   }
 
   async validateBearerToken(token: string): Promise<{ valid: boolean; roles: string[]; mfaValidated: boolean }> {
-    // Try OIDC remote verification first
+    // Try local JWT first (fast, no network — dev mode)
+    const local = await this.domainService.verifyLocalToken(token);
+    if (local.valid) {
+      return local;
+    }
+
+    // Fallback: OIDC remote verification
     const identity = await this.oidcVerifier.verifyBearerToken(token);
     if (identity) {
       return {
@@ -32,12 +38,6 @@ export class AuthService {
         roles: identity.roles,
         mfaValidated: identity.mfaValidated
       };
-    }
-
-    // Fallback: verify locally-signed JWT (dev mode)
-    const local = await this.domainService.verifyLocalToken(token);
-    if (local.valid) {
-      return local;
     }
 
     return {
