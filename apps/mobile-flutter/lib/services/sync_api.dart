@@ -1,29 +1,40 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../models/local_report.dart';
 import 'local_store.dart';
 
 class SyncApi {
+  static final GlobalKey<ScaffoldMessengerState> scaffoldKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   static const String _apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:3000'
   );
 
-  Future<int> pushReport(LocalReport report) async {
+  final LocalStore store;
+  SyncApi(this.store);
+
+  Future<int> pushReport(Map<String, Object?> report) async {
     final payload = {
-      'localId': report.localId,
-      'version': report.version,
+      'localId': report['local_id'],
+      'version': report['version'],
       'payload': {
-        'title': report.title,
-        'description': report.description,
-        'severity': report.severity,
-        'photos': report.photos
+        'title': report['title'],
+        'description': report['description'],
+        'severity': report['severity'],
+        'latitude': report['latitude'],
+        'longitude': report['longitude'],
+        'photoPath': report['photo_path']
       }
     };
 
     final response = await http.post(
       Uri.parse('$_apiBaseUrl/sync/push'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-role': 'RESPONSABLE_QSE'
+      },
       body: jsonEncode(payload)
     );
 
@@ -34,19 +45,38 @@ class SyncApi {
     throw Exception('Sync HTTP failure: ${response.statusCode}');
   }
 
-  Future<void> syncAll() async {
-    final reports = await LocalStore.instance.listReports();
+  Future<int> syncAll() async {
+    final reports = await store.listReports();
+    int synced = 0;
     for (final report in reports) {
-      if (report.status == 'SYNCED') {
-        continue;
-      }
+      final status = report['status'] as String? ?? 'PENDING';
+      if (status == 'SYNCED') continue;
 
-      final httpCode = await pushReport(report);
-      if (httpCode == 200 || httpCode == 201) {
-        await LocalStore.instance.updateStatus(report.localId, 'SYNCED', report.version + 1);
-      } else if (httpCode == 409) {
-        await LocalStore.instance.updateStatus(report.localId, 'CONFLICT', report.version + 1);
+      try {
+        final httpCode = await pushReport(report);
+        final localId = report['local_id'] as String;
+        final version = report['version'] as int? ?? 1;
+        if (httpCode == 200 || httpCode == 201) {
+          await store.updateStatus(localId, 'SYNCED', version + 1);
+          synced++;
+        } else if (httpCode == 409) {
+          await store.updateStatus(localId, 'CONFLICT', version + 1);
+        }
+      } catch (_) {
+        // Skip failed items, will retry next sync
       }
     }
+
+    if (synced > 0) {
+      scaffoldKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('Sync OK — $synced rapport(s) synchronisé(s)'),
+          backgroundColor: const Color(0xFF1AA05D),
+          duration: const Duration(seconds: 3)
+        )
+      );
+    }
+
+    return synced;
   }
 }
