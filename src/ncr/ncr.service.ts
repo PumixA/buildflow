@@ -94,6 +94,21 @@ export class NcrService {
     return found;
   }
 
+  updateNcr(ncrId: string, partial: { title?: string; description?: string; priority?: string }): ManagedNcr {
+    const ncr = this.getById(ncrId);
+    if (partial.title !== undefined) ncr.title = partial.title;
+    if (partial.description !== undefined) ncr.description = partial.description;
+    if (partial.priority !== undefined) ncr.priority = partial.priority as ManagedNcr['priority'];
+    ncr.version += 1;
+    ncr.history.push({
+      timestamp: new Date().toISOString(),
+      actorId: 'SYSTEM',
+      status: ncr.status,
+      comment: `Mise à jour: ${JSON.stringify(partial)}`
+    });
+    return ncr;
+  }
+
   setStatus(ncrId: string, status: NcrStatus, actorId: string, comment?: string): ManagedNcr {
     const ncr = this.getById(ncrId);
     ncr.status = status;

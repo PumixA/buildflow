@@ -1,6 +1,7 @@
 export type EventTopic =
   | 'ncr.created'
   | 'ncr.status.updated'
+  | 'ncr.updated'
   | 'ncr.closed'
   | 'hse.incident.created'
   | 'hse.action.created'

@@ -72,6 +72,14 @@ export class HseService {
     return resolved;
   }
 
+  listIncidents(projectId?: string, status?: string): ReturnType<DomainHseService['listIncidents']> {
+    return this.domainService.listIncidents(projectId, status);
+  }
+
+  getIncident(incidentId: string): ReturnType<DomainHseService['getIncidentById']> {
+    return this.domainService.getIncidentById(incidentId);
+  }
+
   dashboard(): ReturnType<DomainHseService['dashboard']> {
     return this.domainService.dashboard();
   }

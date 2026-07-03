@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
 import { PushSyncDto, ResolveSyncDto } from './dto/sync.dto';
 import { SyncService } from './sync.service';
@@ -15,8 +15,19 @@ export class SyncController {
 
   @Get('queue')
   @Roles('RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
-  queue(): ReturnType<SyncService['queue']> {
-    return this.syncService.queue();
+  async queue(@Query('page') page?: string, @Query('limit') limit?: string) {
+    const all = await this.syncService.queue();
+    const p = Math.max(1, parseInt(page || '1', 10) || 1);
+    const l = Math.min(100, Math.max(1, parseInt(limit || '20', 10) || 20));
+    const start = (p - 1) * l;
+    const items = Array.isArray(all) ? all : [];
+    return {
+      items: items.slice(start, start + l),
+      total: items.length,
+      page: p,
+      limit: l,
+      totalPages: Math.ceil(items.length / l)
+    };
   }
 
   @Post('push')

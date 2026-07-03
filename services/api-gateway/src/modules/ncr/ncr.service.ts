@@ -33,6 +33,17 @@ export class NcrService {
     return this.domainService.getById(ncrId);
   }
 
+  update(ncrId: string, partial: { title?: string; description?: string; priority?: string }): ManagedNcr {
+    const updated = this.domainService.updateNcr(ncrId, partial);
+    void this.messagingService.publish({
+      topic: 'ncr.updated',
+      timestamp: new Date().toISOString(),
+      payload: { id: ncrId, ...partial }
+    });
+    this.auditService.append('ncr.updated', 'SYSTEM', { ncrId, ...partial });
+    return updated;
+  }
+
   create(input: CreateNcrInput): ManagedNcr {
     const created = this.domainService.createNCR(input);
     void this.persistToDatabase(created);

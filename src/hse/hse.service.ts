@@ -83,6 +83,21 @@ export class HseService {
     return incident;
   }
 
+  listIncidents(projectId?: string, status?: string): Incident[] {
+    const incidents = [...this.incidents.values()];
+    return incidents.filter((i) => {
+      if (projectId && i.projectId !== projectId) return false;
+      if (status && i.status !== status) return false;
+      return true;
+    });
+  }
+
+  getIncidentById(incidentId: string): Incident {
+    const incident = this.incidents.get(incidentId);
+    if (!incident) throw new Error(`Incident ${incidentId} introuvable`);
+    return incident;
+  }
+
   dashboard(): {
     totalOpen: number;
     criticalOpen: number;
