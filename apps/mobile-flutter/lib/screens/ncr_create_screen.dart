@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../models/local_report.dart';
 import '../services/local_store.dart';
-import '../services/sync_api.dart';
 
 class NcrCreateScreen extends StatefulWidget {
   const NcrCreateScreen({super.key});
@@ -229,7 +228,7 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
 
             // Severity
             DropdownButtonFormField<String>(
-              value: _severity,
+              initialValue: _severity,
               decoration: const InputDecoration(labelText: 'Gravité', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'MINOR', child: Text('Mineure')),
