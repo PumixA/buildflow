@@ -31,7 +31,10 @@ class SyncApi {
 
     final response = await http.post(
       Uri.parse('$_apiBaseUrl/sync/push'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-role': 'RESPONSABLE_QSE'
+      },
       body: jsonEncode(payload)
     );
 
