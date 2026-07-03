@@ -25,8 +25,41 @@ export class NcrService {
     private readonly messagingService: MessagingService
   ) {}
 
-  list(projectId?: string, status?: NcrStatus): ManagedNcr[] {
-    return this.domainService.list(projectId, status);
+  async list(projectId?: string, status?: NcrStatus): Promise<ManagedNcr[]> {
+    const fromMemory = this.domainService.list(projectId, status);
+    if (fromMemory.length > 0) return fromMemory;
+
+    // Fallback: load from DB into memory
+    if (!this.databaseService.enabled) return [];
+    try {
+      const result = await this.databaseService.query(
+        `SELECT id, project_id, creator_id, title, description, status, priority,
+                latitude, longitude, sync_status, local_id, version, created_at, updated_at
+         FROM ncr ORDER BY created_at DESC LIMIT 100`
+      );
+      return (result.rows as Array<Record<string, unknown>>).map((row) => ({
+        id: String(row['id']).substring(0, 8),
+        projectId: String(row['project_id'] ?? ''),
+        creatorId: String(row['creator_id'] ?? ''),
+        title: String(row['title'] ?? ''),
+        description: String(row['description'] ?? ''),
+        status: String(row['status'] ?? 'OPEN') as NcrStatus,
+        priority: (String(row['priority'] ?? 'MEDIUM')) as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+        latitude: Number(row['latitude'] ?? 0),
+        longitude: Number(row['longitude'] ?? 0),
+        photos: [],
+        sync_status: Boolean(row['sync_status']),
+        localId: String(row['local_id'] ?? ''),
+        version: Number(row['version'] ?? 1),
+        createdAt: String(row['created_at'] ?? new Date().toISOString()),
+        updatedAt: String(row['updated_at'] ?? new Date().toISOString()),
+        closureProofs: [],
+        correctiveTasks: [],
+        history: []
+      })) as ManagedNcr[];
+    } catch {
+      return [];
+    }
   }
 
   detail(ncrId: string): ManagedNcr {
@@ -53,7 +86,7 @@ export class NcrService {
       payload: {
         id: created.id,
         projectId: created.projectId,
-        priority: created.priority
+        status: created.status
       }
     });
     this.auditService.append('ncr.created', input.creatorId, {
@@ -65,164 +98,89 @@ export class NcrService {
 
   setStatus(ncrId: string, status: NcrStatus, actorId: string, comment?: string): ManagedNcr {
     const updated = this.domainService.setStatus(ncrId, status, actorId, comment);
-    void this.persistToDatabase(updated);
+    void this.persistStatusToDatabase(ncrId, status);
     void this.messagingService.publish({
       topic: 'ncr.status.updated',
       timestamp: new Date().toISOString(),
-      payload: {
-        id: ncrId,
-        status
-      }
+      payload: { id: ncrId, status }
     });
-    this.auditService.append('ncr.status.updated', actorId, {
-      ncrId,
-      status,
-      comment
-    });
+    this.auditService.append('ncr.status.updated', actorId, { ncrId, status, comment });
     return updated;
   }
 
   assignTask(ncrId: string, description: string, assigneeId: string): ManagedNcr {
     const updated = this.domainService.assignCorrectiveTask(ncrId, description, assigneeId);
-    void this.persistToDatabase(updated);
-    this.auditService.append('ncr.task.assigned', assigneeId, {
-      ncrId,
-      description
-    });
+    this.auditService.append('ncr.task.assigned', assigneeId, { ncrId, description });
     return updated;
   }
 
-  async addClosureProof(
-    ncrId: string,
-    actorId: string,
-    fileName: string,
-    contentType: string,
-    payloadBase64: string
-  ): Promise<ManagedNcr> {
-    const evidence = await this.wormStorage.storeEvidence({
-      fileName,
-      contentType,
-      payloadBase64
-    });
-    const updated = this.domainService.addClosureProof(ncrId, evidence.url, actorId);
-    void this.persistToDatabase(updated);
-    this.auditService.append('ncr.closure.proof', actorId, {
-      ncrId,
-      evidenceId: evidence.id,
-      hash: evidence.hashSha256
-    });
+  async addClosureProof(ncrId: string, actorId: string, fileName: string, contentType: string, payloadBase64: string): Promise<ManagedNcr> {
+    const upload = await this.wormStorage.storeEvidence({ fileName, contentType, payloadBase64 });
+    const updated = this.domainService.addClosureProof(ncrId, upload.url, actorId);
+    this.auditService.append('ncr.closure.proof.added', actorId, { ncrId, fileName });
     return updated;
   }
 
   close(ncrId: string, validatorId: string): ManagedNcr {
-    const closed = this.domainService.closeNCR(ncrId, validatorId);
-    void this.persistToDatabase(closed);
+    const updated = this.domainService.closeNCR(ncrId, validatorId);
     void this.messagingService.publish({
       topic: 'ncr.closed',
       timestamp: new Date().toISOString(),
-      payload: {
-        id: ncrId,
-        validatorId
-      }
+      payload: { id: ncrId, validatorId }
     });
-    this.auditService.append('ncr.closed', validatorId, {
-      ncrId
-    });
-    return closed;
+    this.auditService.append('ncr.closed', validatorId, { ncrId });
+    return updated;
   }
 
   private async persistToDatabase(ncr: ManagedNcr): Promise<void> {
-    if (!this.databaseService.enabled) {
-      return;
-    }
-
-    const projectDbId = await this.ensureProject(ncr.projectId);
-    const creatorDbId = await this.ensureUser(ncr.creatorId);
+    if (!this.databaseService.enabled) return;
     const dbId = this.domainToDbId.get(ncr.id) ?? randomUUID();
     this.domainToDbId.set(ncr.id, dbId);
-
+    const projectDbId = await this.ensureProject(ncr.projectId);
+    const creatorDbId = await this.ensureUser(ncr.creatorId);
     await this.databaseService.query(
-      `
-      INSERT INTO ncr (id, project_id, creator_id, title, description, status, latitude, longitude, sync_status, local_id, version, created_at, updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid,$11,$12::timestamp,$13::timestamp)
-      ON CONFLICT (id) DO UPDATE SET
-        title = EXCLUDED.title,
-        description = EXCLUDED.description,
-        status = EXCLUDED.status,
-        latitude = EXCLUDED.latitude,
-        longitude = EXCLUDED.longitude,
-        sync_status = EXCLUDED.sync_status,
-        version = EXCLUDED.version,
-        updated_at = EXCLUDED.updated_at
-      `,
-      [
-        dbId,
-        projectDbId,
-        creatorDbId,
-        ncr.title,
-        ncr.description,
-        ncr.status,
-        ncr.latitude,
-        ncr.longitude,
-        ncr.sync_status,
-        randomUUID(),
-        ncr.version,
-        ncr.createdAt,
-        ncr.updatedAt
-      ]
+      `INSERT INTO ncr (id, project_id, creator_id, title, description, status, priority,
+        latitude, longitude, sync_status, local_id, version, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())
+       ON CONFLICT (id) DO UPDATE SET status=$6, priority=$7, updated_at=NOW()`,
+      [dbId, projectDbId, creatorDbId, ncr.title, ncr.description, ncr.status, ncr.priority,
+       ncr.latitude, ncr.longitude, ncr.sync_status, ncr.localId, ncr.version]
+    );
+  }
+
+  private async persistStatusToDatabase(ncrId: string, status: string): Promise<void> {
+    if (!this.databaseService.enabled) return;
+    const dbId = this.domainToDbId.get(ncrId);
+    if (!dbId) return;
+    await this.databaseService.query(
+      `UPDATE ncr SET status=$1, updated_at=NOW() WHERE id=$2`, [status, dbId]
     );
   }
 
   private async ensureProject(projectCode: string): Promise<string> {
     const fromMemory = this.projectToDbId.get(projectCode);
-    if (fromMemory) {
-      return fromMemory;
-    }
-
-    const found = await this.databaseService.query(
-      'SELECT id FROM projects WHERE name = $1 LIMIT 1',
-      [projectCode]
+    if (fromMemory) return fromMemory;
+    const result = await this.databaseService.query(
+      `INSERT INTO projects (id, name, status) VALUES ($1, $2, 'ACTIVE')
+       ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [randomUUID(), projectCode]
     );
-    if (found.rowCount && found.rows[0]) {
-      const row = found.rows[0] as { id: string };
-      this.projectToDbId.set(projectCode, row.id);
-      return row.id;
-    }
-
-    const projectId = randomUUID();
-    await this.databaseService.query(
-      'INSERT INTO projects (id, name, location_gps, status, created_at) VALUES ($1,$2,$3,$4,NOW())',
-      [projectId, projectCode, 'unknown', 'ACTIVE']
-    );
+    const row = (result.rows as Array<{ id: string }>)[0];
+    const projectId = row?.id ?? randomUUID();
     this.projectToDbId.set(projectCode, projectId);
     return projectId;
   }
 
   private async ensureUser(userCode: string): Promise<string> {
     const fromMemory = this.userToDbId.get(userCode);
-    if (fromMemory) {
-      return fromMemory;
-    }
-
-    const pseudoEmail = `${userCode.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}@buildflow.local`;
-    const found = await this.databaseService.query(
-      'SELECT id FROM users WHERE email = $1 LIMIT 1',
-      [pseudoEmail]
+    if (fromMemory) return fromMemory;
+    const result = await this.databaseService.query(
+      `INSERT INTO users (id, name, email, role) VALUES ($1, $2, $3, 'CHEF_CHANTIER')
+       ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [randomUUID(), userCode, `${userCode.toLowerCase()}@buildflow.io`]
     );
-    if (found.rowCount && found.rows[0]) {
-      const row = found.rows[0] as { id: string };
-      this.userToDbId.set(userCode, row.id);
-      return row.id;
-    }
-
-    const userId = randomUUID();
-    await this.databaseService.query(
-      `
-      INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6,NOW())
-      `,
-      [userId, userCode, pseudoEmail, 'CHEF_CHANTIER', 'hash-placeholder', true]
-    );
+    const row = (result.rows as Array<{ id: string }>)[0];
+    const userId = row?.id ?? randomUUID();
     this.userToDbId.set(userCode, userId);
     return userId;
   }
