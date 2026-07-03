@@ -80,3 +80,27 @@ CREATE INDEX IF NOT EXISTS idx_incidents_project_id ON incidents(project_id);
 CREATE INDEX IF NOT EXISTS idx_ncr_photos_ncr_id ON ncr_photos(ncr_id);
 CREATE INDEX IF NOT EXISTS idx_hse_actions_incident_id ON hse_actions(incident_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+
+-- Sync queue (offline-first persistence)
+CREATE TABLE IF NOT EXISTS sync_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  local_id VARCHAR(255) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL DEFAULT 'ncr',
+  version INTEGER NOT NULL DEFAULT 1,
+  payload JSONB NOT NULL,
+  content_hash VARCHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  server_id UUID,
+  error_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sync_queue_local_id ON sync_queue(local_id);
+CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status);
+CREATE INDEX IF NOT EXISTS idx_sync_queue_content_hash ON sync_queue(content_hash);
+
+-- Idempotence: unique constraint on local_id + content_hash
+ALTER TABLE ncr ADD COLUMN IF NOT EXISTS local_id UUID;
+ALTER TABLE ncr ADD COLUMN IF NOT EXISTS sync_status VARCHAR(20) DEFAULT 'PENDING';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ncr_local_id ON ncr(local_id);
