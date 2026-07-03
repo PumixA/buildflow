@@ -9,9 +9,7 @@ class LocalStore {
   Database? _db;
 
   Future<Database> _database() async {
-    if (_db != null) {
-      return _db!;
-    }
+    if (_db != null) return _db!;
 
     sqfliteFfiInit();
     final databaseFactory = databaseFactoryFfi;
@@ -20,7 +18,7 @@ class LocalStore {
     _db = await databaseFactory.openDatabase(
       dbPath,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onCreate: (database, _) async {
           await database.execute('''
             CREATE TABLE IF NOT EXISTS local_reports (
@@ -28,12 +26,21 @@ class LocalStore {
               title TEXT NOT NULL,
               description TEXT NOT NULL,
               severity TEXT NOT NULL,
-              photos INTEGER NOT NULL,
-              status TEXT NOT NULL,
-              version INTEGER NOT NULL,
+              photo_path TEXT,
+              latitude REAL NOT NULL DEFAULT 0,
+              longitude REAL NOT NULL DEFAULT 0,
+              status TEXT NOT NULL DEFAULT 'PENDING',
+              version INTEGER NOT NULL DEFAULT 1,
               created_at TEXT NOT NULL
             )
           ''');
+        },
+        onUpgrade: (database, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await database.execute('ALTER TABLE local_reports ADD COLUMN photo_path TEXT');
+            await database.execute('ALTER TABLE local_reports ADD COLUMN latitude REAL NOT NULL DEFAULT 0');
+            await database.execute('ALTER TABLE local_reports ADD COLUMN longitude REAL NOT NULL DEFAULT 0');
+          }
         }
       )
     );
@@ -50,20 +57,16 @@ class LocalStore {
     );
   }
 
-  Future<List<LocalReport>> listReports() async {
+  Future<List<Map<String, Object?>>> listReports() async {
     final db = await _database();
-    final rows = await db.query('local_reports', orderBy: 'created_at DESC');
-    return rows.map(LocalReport.fromDbMap).toList();
+    return db.query('local_reports', orderBy: 'created_at DESC');
   }
 
   Future<void> updateStatus(String localId, String status, int nextVersion) async {
     final db = await _database();
     await db.update(
       'local_reports',
-      {
-        'status': status,
-        'version': nextVersion
-      },
+      {'status': status, 'version': nextVersion},
       where: 'local_id = ?',
       whereArgs: [localId]
     );

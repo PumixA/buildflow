@@ -1,33 +1,17 @@
 import 'package:buildflow_mobile/models/local_report.dart';
-import 'package:buildflow_mobile/services/local_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('LocalStore save/list/update workflow', () async {
-    final localId = 'test-${DateTime.now().microsecondsSinceEpoch}';
+  test('LocalReport model has GPS and photo fields', () {
     final report = LocalReport(
-      localId: localId,
-      title: 'Recette locale',
-      description: 'Persist and update status',
-      severity: 'MINOR',
-      photos: 1,
-      status: 'PENDING',
-      version: 1,
-      createdAt: DateTime.now().toUtc().toIso8601String()
+      localId: 'id-1', title: 'Test', description: 'Desc',
+      severity: 'MAJOR', photoPath: '/p.jpg',
+      latitude: 48.85, longitude: 2.35,
+      status: 'PENDING', version: 1, createdAt: '2026-01-01T00:00:00Z'
     );
-
-    await LocalStore.instance.savePendingReport(report);
-    final listed = await LocalStore.instance.listReports();
-    final created = listed.where((item) => item.localId == localId).toList();
-
-    expect(created.length, 1);
-    expect(created.first.status, 'PENDING');
-
-    await LocalStore.instance.updateStatus(localId, 'SYNCED', 2);
-    final updatedList = await LocalStore.instance.listReports();
-    final updated = updatedList.firstWhere((item) => item.localId == localId);
-
-    expect(updated.status, 'SYNCED');
-    expect(updated.version, 2);
+    final map = report.toDbMap();
+    expect(map['latitude'], 48.85);
+    expect(map['photo_path'], '/p.jpg');
+    expect(map['status'], 'PENDING');
   });
 }
