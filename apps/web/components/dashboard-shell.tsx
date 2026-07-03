@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 
 type DashboardShellProps = {
@@ -13,12 +13,22 @@ type DashboardShellProps = {
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, logout } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [mounted, isAuthenticated, router]);
+
+  // During SSR, show content (auth check runs on client)
+  if (!mounted) {
+    return <main className="app-shell"><div className="app-content"><p>Chargement...</p></div></main>;
+  }
 
   if (!isAuthenticated) {
     return null;
