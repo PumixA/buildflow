@@ -39,15 +39,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (loginEmail: string, password: string, mfaCode?: string) => {
+    const body: Record<string, string> = { email: loginEmail, password };
+    if (mfaCode) body.mfaCode = mfaCode;
+
     const res = await fetch(`${API_BASE_URL}/auth/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: loginEmail, password, mfaCode })
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Échec de connexion' }));
-      throw new Error(err.message || 'Échec de connexion');
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || '';
+      if (msg.includes('MFA')) {
+        throw new Error('MFA_REQUIRED');
+      }
+      throw new Error(msg || 'Identifiants invalides');
     }
 
     const data = await res.json();

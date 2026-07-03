@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthService as DomainAuthService } from '../../../../../src/auth/auth.service';
 import { OidcVerifierService } from './oidc-verifier.service';
 
@@ -11,8 +11,16 @@ export class AuthService {
     return this.domainService.getConfig();
   }
 
-  async createSession(input: { email: string; password: string; mfaCode?: string }): Promise<ReturnType<DomainAuthService['createSession']>> {
-    return this.domainService.createSession(input);
+  async createSession(input: { email: string; password: string; mfaCode?: string }) {
+    try {
+      return await this.domainService.createSession(input);
+    } catch (err) {
+      const message = (err as Error).message;
+      if (message.includes('MFA_REQUIRED')) {
+        throw new UnauthorizedException(message);
+      }
+      throw new UnauthorizedException(message);
+    }
   }
 
   async validateBearerToken(token: string): Promise<{ valid: boolean; roles: string[]; mfaValidated: boolean }> {

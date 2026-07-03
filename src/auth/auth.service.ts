@@ -56,7 +56,7 @@ export class AuthService {
       throw new Error('Identifiants invalides');
     }
     if (user.mfaRequired && input.mfaCode !== '123456') {
-      throw new Error('Code MFA invalide');
+      throw new Error('MFA_REQUIRED: Code MFA invalide');
     }
 
     const accessToken = await new SignJWT({
