@@ -85,4 +85,37 @@ describe('SyncService', () => {
     expect(after.synced).toBeGreaterThanOrEqual(1);
     expect(service.listQueue().length).toBeGreaterThanOrEqual(1);
   });
+
+  it('doit être idempotent sur un push identique (même localId + même contenu)', () => {
+    const first = service.push({
+      localId: 'local-idem',
+      version: 1,
+      payload: { title: 'NCR Idempotente' }
+    });
+    expect(first.httpCode).toBe(201);
+
+    const second = service.push({
+      localId: 'local-idem',
+      version: 1,
+      payload: { title: 'NCR Idempotente' }
+    });
+    expect(second.httpCode).toBe(200);
+    expect(second.notification).toBe('Déjà synchronisé');
+  });
+
+  it('doit détecter un contenu différent comme nouveau push (pas idempotent)', () => {
+    service.push({
+      localId: 'local-diff',
+      version: 1,
+      payload: { title: 'NCR Originale' }
+    });
+
+    const result = service.push({
+      localId: 'local-diff',
+      version: 2,
+      payload: { title: 'NCR Modifiée' }
+    });
+    expect(result.httpCode).toBe(200);
+    expect(result.notification).not.toBe('Déjà synchronisé');
+  });
 });
