@@ -8,13 +8,12 @@ services:
     environment:
       NODE_ENV: development
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-      - /usr/src/app/apps/web/node_modules
-      - /usr/src/app/apps/web/.next
-      - /usr/src/app/dist
-      - /usr/src/app/coverage
-      - /usr/src/app/apps/mobile-flutter/build
+      - ./src:/usr/src/app/src
+      - ./services:/usr/src/app/services
+      - ./libs:/usr/src/app/libs
+      - ./infra:/usr/src/app/infra
+      - ./test:/usr/src/app/test
+      - ./data:/usr/src/app/data
 
   web:
     build:
@@ -28,6 +27,8 @@ services:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ./apps/web:/usr/src/app/apps/web
-      - /usr/src/app/apps/web/node_modules
-      - /usr/src/app/apps/web/.next
+      - ./apps/web/src:/usr/src/app/apps/web/src 2>/dev/null
+      - ./apps/web/app:/usr/src/app/apps/web/app
+      - ./apps/web/components:/usr/src/app/apps/web/components
+      - ./apps/web/lib:/usr/src/app/apps/web/lib
+      - ./apps/web/public:/usr/src/app/apps/web/public 2>/dev/null
