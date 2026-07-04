@@ -70,6 +70,7 @@ services:
       AMQP_URL: amqp://guest:guest@rabbitmq:5672
       AMQP_EXCHANGE: buildflow.events
       AUDIT_LOG_FILE: data/audit-log.jsonl
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "3000:3000"
     depends_on:
@@ -96,6 +97,29 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config", "/etc/otel-collector.yml"]
+    volumes:
+      - ./infra/otel/otel-collector.yml:/etc/otel-collector.yml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "9464:9464"
+
+  nginx:
+    build:
+      context: ./infra/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "443:443"
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
 
 volumes:
   postgres-data:
