@@ -16,9 +16,9 @@ describe('NcrController', () => {
 
     const mockService = {
       list: () => Promise.resolve([mockNcr]),
-      detail: (id: string) => mockNcr,
+      detail: (_id: string) => mockNcr,
       create: (input: Record<string, unknown>) => ({ ...mockNcr, ...input }),
-      update: (id: string, partial: Record<string, unknown>) => ({ ...mockNcr, ...partial }),
+      update: (_id: string, partial: Record<string, unknown>) => ({ ...mockNcr, ...partial }),
       setStatus: () => mockNcr,
       assignTask: () => mockNcr,
       addClosureProof: () => Promise.resolve(mockNcr),

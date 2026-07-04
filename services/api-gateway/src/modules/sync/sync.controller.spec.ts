@@ -28,7 +28,6 @@ describe('SyncController', () => {
     }).compile();
 
     controller = module.get<SyncController>(SyncController);
-    service = module.get<SyncService>(SyncService);
   });
 
   it('should return sync status', async () => {
