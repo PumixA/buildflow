@@ -4,7 +4,6 @@ import { SyncService } from './sync.service';
 
 describe('SyncController', () => {
   let controller: SyncController;
-  let service: SyncService;
 
   beforeEach(async () => {
     const mockService = {

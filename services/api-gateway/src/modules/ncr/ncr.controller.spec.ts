@@ -16,9 +16,10 @@ describe('NcrController', () => {
 
     const mockService = {
       list: () => Promise.resolve([mockNcr]),
-      detail: (_id: string) => mockNcr,
+      detail: () => mockNcr,
       create: (input: Record<string, unknown>) => ({ ...mockNcr, ...input }),
-      update: (_id: string, partial: Record<string, unknown>) => ({ ...mockNcr, ...partial }),
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      update: (id: string, partial: Record<string, unknown>) => ({ ...mockNcr, ...partial }),
       setStatus: () => mockNcr,
       assignTask: () => mockNcr,
       addClosureProof: () => Promise.resolve(mockNcr),
