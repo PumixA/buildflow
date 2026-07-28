@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { NcrStatus } from '../../../../../libs/domain/src/models';
 import {
@@ -13,10 +13,23 @@ import { WormStorageAdapter } from '../storage/worm-storage.adapter';
 
 @Injectable()
 export class NcrService {
+  private readonly logger = new Logger(NcrService.name);
   private readonly domainService = new DomainNcrService();
   private readonly domainToDbId = new Map<string, string>();
   private readonly projectToDbId = new Map<string, string>();
   private readonly userToDbId = new Map<string, string>();
+
+  /**
+   * Lance une opération asynchrone secondaire (persistance, publication d'événement)
+   * sans bloquer la réponse HTTP, mais en capturant les erreurs.
+   *
+   * Sans ce `.catch()`, un rejet non géré termine le process Node (>= 15).
+   */
+  private fireAndForget(operation: Promise<unknown>, context: string): void {
+    void operation.catch((err) => {
+      this.logger.error(`${context}: ${(err as Error).message}`, (err as Error).stack);
+    });
+  }
 
   constructor(
     private readonly wormStorage: WormStorageAdapter,
@@ -71,27 +84,36 @@ export class NcrService {
 
   update(ncrId: string, partial: { title?: string; description?: string; priority?: string }): ManagedNcr {
     const updated = this.domainService.updateNcr(ncrId, partial);
-    void this.messagingService.publish({
-      topic: 'ncr.updated',
-      timestamp: new Date().toISOString(),
-      payload: { id: ncrId, ...partial }
-    });
+    this.fireAndForget(
+      this.messagingService.publish({
+        topic: 'ncr.updated',
+        timestamp: new Date().toISOString(),
+        payload: { id: ncrId, ...partial }
+      }),
+      `Publication ncr.updated échouée pour ${ncrId}`
+    );
     this.auditService.append('ncr.updated', 'SYSTEM', { ncrId, ...partial });
     return updated;
   }
 
   create(input: CreateNcrInput): ManagedNcr {
     const created = this.domainService.createNCR(input);
-    void this.persistToDatabase(created);
-    void this.messagingService.publish({
-      topic: 'ncr.created',
-      timestamp: new Date().toISOString(),
-      payload: {
-        id: created.id,
-        projectId: created.projectId,
-        status: created.status
-      }
-    });
+    this.fireAndForget(
+      this.persistToDatabase(created),
+      `Persistance de la NCR ${created.id} échouée`
+    );
+    this.fireAndForget(
+      this.messagingService.publish({
+        topic: 'ncr.created',
+        timestamp: new Date().toISOString(),
+        payload: {
+          id: created.id,
+          projectId: created.projectId,
+          status: created.status
+        }
+      }),
+      `Publication ncr.created échouée pour ${created.id}`
+    );
     this.auditService.append('ncr.created', input.creatorId, {
       ncrId: created.id,
       projectId: created.projectId
@@ -101,12 +123,18 @@ export class NcrService {
 
   setStatus(ncrId: string, status: NcrStatus, actorId: string, comment?: string): ManagedNcr {
     const updated = this.domainService.setStatus(ncrId, status, actorId, comment);
-    void this.persistStatusToDatabase(ncrId, status);
-    void this.messagingService.publish({
-      topic: 'ncr.status.updated',
-      timestamp: new Date().toISOString(),
-      payload: { id: ncrId, status }
-    });
+    this.fireAndForget(
+      this.persistStatusToDatabase(ncrId, status),
+      `Mise à jour du statut de ${ncrId} en base échouée`
+    );
+    this.fireAndForget(
+      this.messagingService.publish({
+        topic: 'ncr.status.updated',
+        timestamp: new Date().toISOString(),
+        payload: { id: ncrId, status }
+      }),
+      `Publication ncr.status.updated échouée pour ${ncrId}`
+    );
     this.auditService.append('ncr.status.updated', actorId, { ncrId, status, comment });
     return updated;
   }
@@ -126,11 +154,14 @@ export class NcrService {
 
   close(ncrId: string, validatorId: string): ManagedNcr {
     const updated = this.domainService.closeNCR(ncrId, validatorId);
-    void this.messagingService.publish({
-      topic: 'ncr.closed',
-      timestamp: new Date().toISOString(),
-      payload: { id: ncrId, validatorId }
-    });
+    this.fireAndForget(
+      this.messagingService.publish({
+        topic: 'ncr.closed',
+        timestamp: new Date().toISOString(),
+        payload: { id: ncrId, validatorId }
+      }),
+      `Publication ncr.closed échouée pour ${ncrId}`
+    );
     this.auditService.append('ncr.closed', validatorId, { ncrId });
     return updated;
   }
@@ -163,13 +194,22 @@ export class NcrService {
   private async ensureProject(projectCode: string): Promise<string> {
     const fromMemory = this.projectToDbId.get(projectCode);
     if (fromMemory) return fromMemory;
-    const result = await this.databaseService.query(
-      `INSERT INTO projects (id, name, status) VALUES ($1, $2, 'ACTIVE')
-       ON CONFLICT (id) DO NOTHING RETURNING id`,
-      [randomUUID(), projectCode]
+
+    const found = await this.databaseService.query(
+      'SELECT id FROM projects WHERE name = $1 LIMIT 1',
+      [projectCode]
     );
-    const row = (result.rows as Array<{ id: string }>)[0];
-    const projectId = row?.id ?? randomUUID();
+    if (found.rowCount && found.rows[0]) {
+      const row = found.rows[0] as { id: string };
+      this.projectToDbId.set(projectCode, row.id);
+      return row.id;
+    }
+
+    const projectId = randomUUID();
+    await this.databaseService.query(
+      'INSERT INTO projects (id, name, location_gps, status, created_at) VALUES ($1,$2,$3,$4,NOW())',
+      [projectId, projectCode, 'unknown', 'ACTIVE']
+    );
     this.projectToDbId.set(projectCode, projectId);
     return projectId;
   }
@@ -177,13 +217,26 @@ export class NcrService {
   private async ensureUser(userCode: string): Promise<string> {
     const fromMemory = this.userToDbId.get(userCode);
     if (fromMemory) return fromMemory;
-    const result = await this.databaseService.query(
-      `INSERT INTO users (id, name, email, role) VALUES ($1, $2, $3, 'CHEF_CHANTIER')
-       ON CONFLICT (id) DO NOTHING RETURNING id`,
-      [randomUUID(), userCode, `${userCode.toLowerCase()}@buildflow.io`]
+
+    const email = `${userCode.toLowerCase()}@buildflow.io`;
+    const found = await this.databaseService.query(
+      'SELECT id FROM users WHERE email = $1 LIMIT 1',
+      [email]
     );
-    const row = (result.rows as Array<{ id: string }>)[0];
-    const userId = row?.id ?? randomUUID();
+    if (found.rowCount && found.rows[0]) {
+      const row = found.rows[0] as { id: string };
+      this.userToDbId.set(userCode, row.id);
+      return row.id;
+    }
+
+    // Enregistrement technique dérivé d'un code auteur, pas un compte : `hashed_password`
+    // est NOT NULL en base et ne doit correspondre à aucun hash vérifiable.
+    const userId = randomUUID();
+    await this.databaseService.query(
+      `INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,NOW())`,
+      [userId, userCode, email, 'CHEF_CHANTIER', 'hash-placeholder', true]
+    );
     this.userToDbId.set(userCode, userId);
     return userId;
   }
