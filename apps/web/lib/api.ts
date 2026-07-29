@@ -8,6 +8,7 @@ const API_BASE_URL = typeof window === 'undefined'
 type BackendNcr = {
   id: string;
   projectId: string;
+  title: string;
   description: string;
   status: 'OPEN' | 'IN_ANALYSIS' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -164,6 +165,7 @@ export async function fetchNcrList(projectId?: string): Promise<NcrItem[]> {
 
   return backendList.map((item) => ({
     id: item.id,
+    titre: item.title || 'Sans titre',
     chantier: item.projectId,
     description: item.description || 'Sans description',
     statut: toUiStatus(item.status),
@@ -183,6 +185,7 @@ export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
 
   return {
     id: backendItem.id,
+    titre: backendItem.title || 'Sans titre',
     chantier: backendItem.projectId,
     description: backendItem.description || 'Sans description',
     statut: toUiStatus(backendItem.status),
