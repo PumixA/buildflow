@@ -136,6 +136,22 @@ export async function createWorksite(input: {
   return toWorksite(created);
 }
 
+export type CreateNcrInput = {
+  /** Code chantier (`projects.name`), pas l'UUID : c'est ce que l'API résout. */
+  projectId: string;
+  creatorId: string;
+  title: string;
+  description: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  latitude: number;
+  longitude: number;
+  photos: string[];
+};
+
+export async function createNcr(input: CreateNcrInput): Promise<{ id: string }> {
+  return postJson<{ id: string }>('/ncr', input);
+}
+
 export async function fetchNcrList(projectId?: string): Promise<NcrItem[]> {
   // Le filtre est appliqué en SQL côté API : filtrer après coup ne verrait que
   // les 100 premières NCR tous chantiers confondus.
