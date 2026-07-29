@@ -54,23 +54,41 @@ export class NcrService {
     private readonly messagingService: MessagingService
   ) {}
 
+  /**
+   * La base fait autorité dès qu'elle est disponible.
+   *
+   * La mémoire était consultée en premier et la base seulement si elle était
+   * vide : après un redémarrage la liste affichait bien les NCR persistées,
+   * mais dès la première création elle ne montrait plus que celle-ci, masquant
+   * toutes les autres.
+   */
   async list(projectId?: string, status?: NcrStatus): Promise<ManagedNcr[]> {
-    const fromMemory = this.domainService.list(projectId, status);
-    if (fromMemory.length > 0) return fromMemory;
-
-    // Repli sur la base : les NCR d'une exécution antérieure ne sont plus en mémoire.
     if (!this.databaseService.enabled) {
-      this.logger.warn('DATABASE_URL non configuré : liste vide.');
-      return [];
+      return this.domainService.list(projectId, status);
     }
+
     try {
+      const values: unknown[] = [];
+      const filters: string[] = [];
+      if (projectId) {
+        values.push(projectId);
+        filters.push(`p.name = $${values.length}`);
+      }
+      if (status) {
+        values.push(status);
+        filters.push(`n.status = $${values.length}`);
+      }
+      const where = filters.length > 0 ? ` WHERE ${filters.join(' AND ')}` : '';
+
       const result = await this.databaseService.query(
-        `${NCR_SELECT} ORDER BY n.created_at DESC LIMIT 100`
+        `${NCR_SELECT}${where} ORDER BY n.created_at DESC LIMIT 100`,
+        values
       );
       return (result.rows as Array<Record<string, unknown>>).map((row) => this.toManagedNcr(row));
     } catch (err) {
       this.logger.error(`Lecture des NCR en base échouée : ${(err as Error).message}`);
-      return [];
+      // Mieux vaut servir la mémoire du process qu'une liste vide.
+      return this.domainService.list(projectId, status);
     }
   }
 
