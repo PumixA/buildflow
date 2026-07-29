@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { NcrStatus } from '../../../../../libs/domain/src/models';
 import {
@@ -10,6 +10,22 @@ import { AuditService } from '../audit/audit.service';
 import { DatabaseService } from '../database/database.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { WormStorageAdapter } from '../storage/worm-storage.adapter';
+
+/**
+ * Projection commune aux lectures NCR.
+ *
+ * `project_name` est résolu par jointure : la colonne `project_id` contient un
+ * UUID technique, que l'interface affichait tel quel à la place du code chantier.
+ * Le COALESCE couvre les NCR dont le projet aurait été supprimé.
+ */
+const NCR_SELECT = `
+  SELECT n.id, n.creator_id, n.title, n.description, n.status, n.priority,
+         n.latitude, n.longitude, n.sync_status, n.local_id, n.version,
+         n.created_at, n.updated_at,
+         COALESCE(p.name, n.project_id::text) AS project_name
+  FROM ncr n
+  LEFT JOIN projects p ON p.id = n.project_id
+`;
 
 @Injectable()
 export class NcrService {
@@ -42,44 +58,67 @@ export class NcrService {
     const fromMemory = this.domainService.list(projectId, status);
     if (fromMemory.length > 0) return fromMemory;
 
-    // Fallback: load from DB into memory
-    if (!this.databaseService.enabled) { console.warn('[NcrService] DB not enabled, returning empty'); return []; }
+    // Repli sur la base : les NCR d'une exécution antérieure ne sont plus en mémoire.
+    if (!this.databaseService.enabled) {
+      this.logger.warn('DATABASE_URL non configuré : liste vide.');
+      return [];
+    }
     try {
-      console.log('[NcrService] Loading NCRs from DB...');
       const result = await this.databaseService.query(
-        `SELECT id, project_id, creator_id, title, description, status, priority,
-                latitude, longitude, sync_status, local_id, version, created_at, updated_at
-         FROM ncr ORDER BY created_at DESC LIMIT 100`
+        `${NCR_SELECT} ORDER BY n.created_at DESC LIMIT 100`
       );
-      console.log('[NcrService] DB returned', result.rows.length, 'rows');
-      return (result.rows as Array<Record<string, unknown>>).map((row) => ({
-        id: String(row['id']).substring(0, 8),
-        projectId: String(row['project_id'] ?? ''),
-        creatorId: String(row['creator_id'] ?? ''),
-        title: String(row['title'] ?? ''),
-        description: String(row['description'] ?? ''),
-        status: String(row['status'] ?? 'OPEN') as NcrStatus,
-        priority: (String(row['priority'] ?? 'MEDIUM')) as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
-        latitude: Number(row['latitude'] ?? 0),
-        longitude: Number(row['longitude'] ?? 0),
-        photos: [],
-        sync_status: Boolean(row['sync_status']),
-        localId: String(row['local_id'] ?? ''),
-        version: Number(row['version'] ?? 1),
-        createdAt: String(row['created_at'] ?? new Date().toISOString()),
-        updatedAt: String(row['updated_at'] ?? new Date().toISOString()),
-        closureProofs: [],
-        correctiveTasks: [],
-        history: []
-      })) as ManagedNcr[];
+      return (result.rows as Array<Record<string, unknown>>).map((row) => this.toManagedNcr(row));
     } catch (err) {
-      console.error('[NcrService] DB query failed:', (err as Error).message);
+      this.logger.error(`Lecture des NCR en base échouée : ${(err as Error).message}`);
       return [];
     }
   }
 
-  detail(ncrId: string): ManagedNcr {
-    return this.domainService.getById(ncrId);
+  async detail(ncrId: string): Promise<ManagedNcr> {
+    try {
+      return this.domainService.getById(ncrId);
+    } catch {
+      // Absente de la mémoire : on tente la base avant de conclure.
+    }
+
+    if (this.databaseService.enabled) {
+      // `id` est un UUID en base, `local_id` l'identifiant applicatif ("ncr-1") :
+      // la liste peut renvoyer l'un ou l'autre selon qu'elle vienne de la mémoire
+      // ou de la base, donc on accepte les deux.
+      const result = await this.databaseService.query(
+        `${NCR_SELECT} WHERE n.id::text = $1 OR n.local_id = $1 LIMIT 1`,
+        [ncrId]
+      );
+      const row = result.rows[0];
+      if (row) {
+        return this.toManagedNcr(row as Record<string, unknown>);
+      }
+    }
+
+    throw new NotFoundException(`NCR introuvable : ${ncrId}`);
+  }
+
+  private toManagedNcr(row: Record<string, unknown>): ManagedNcr {
+    return {
+      id: String(row['id']),
+      projectId: String(row['project_name'] ?? ''),
+      creatorId: String(row['creator_id'] ?? ''),
+      title: String(row['title'] ?? ''),
+      description: String(row['description'] ?? ''),
+      status: String(row['status'] ?? 'OPEN') as NcrStatus,
+      priority: String(row['priority'] ?? 'MEDIUM') as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+      latitude: Number(row['latitude'] ?? 0),
+      longitude: Number(row['longitude'] ?? 0),
+      photos: [],
+      sync_status: Boolean(row['sync_status']),
+      localId: String(row['local_id'] ?? ''),
+      version: Number(row['version'] ?? 1),
+      createdAt: String(row['created_at'] ?? new Date().toISOString()),
+      updatedAt: String(row['updated_at'] ?? new Date().toISOString()),
+      closureProofs: [],
+      correctiveTasks: [],
+      history: []
+    } as ManagedNcr;
   }
 
   update(ncrId: string, partial: { title?: string; description?: string; priority?: string }): ManagedNcr {
