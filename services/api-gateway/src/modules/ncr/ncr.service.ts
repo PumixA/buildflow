@@ -195,6 +195,10 @@ export class NcrService {
     const fromMemory = this.projectToDbId.get(projectCode);
     if (fromMemory) return fromMemory;
 
+    // `projects.name` n'a pas de contrainte d'unicité : impossible d'écrire un upsert
+    // atomique comme pour `users`. Deux créations simultanées d'un même chantier
+    // produisent donc deux lignes. À traiter avec l'index unique sur projects(name),
+    // dans le lot d'alignement du schéma.
     const found = await this.databaseService.query(
       'SELECT id FROM projects WHERE name = $1 LIMIT 1',
       [projectCode]
@@ -218,25 +222,21 @@ export class NcrService {
     const fromMemory = this.userToDbId.get(userCode);
     if (fromMemory) return fromMemory;
 
-    const email = `${userCode.toLowerCase()}@buildflow.io`;
-    const found = await this.databaseService.query(
-      'SELECT id FROM users WHERE email = $1 LIMIT 1',
-      [email]
-    );
-    if (found.rowCount && found.rows[0]) {
-      const row = found.rows[0] as { id: string };
-      this.userToDbId.set(userCode, row.id);
-      return row.id;
-    }
-
     // Enregistrement technique dérivé d'un code auteur, pas un compte : `hashed_password`
     // est NOT NULL en base et ne doit correspondre à aucun hash vérifiable.
-    const userId = randomUUID();
-    await this.databaseService.query(
+    //
+    // Upsert atomique plutôt que SELECT-puis-INSERT : deux créations simultanées
+    // passeraient toutes deux le SELECT et la seconde violerait `users_email_key`.
+    // `DO UPDATE` (et non `DO NOTHING`) garantit que RETURNING renvoie toujours la ligne.
+    const email = `${userCode.toLowerCase()}@buildflow.io`;
+    const result = await this.databaseService.query(
       `INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,NOW())`,
-      [userId, userCode, email, 'CHEF_CHANTIER', 'hash-placeholder', true]
+       VALUES ($1,$2,$3,$4,$5,$6,NOW())
+       ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
+       RETURNING id`,
+      [randomUUID(), userCode, email, 'CHEF_CHANTIER', 'hash-placeholder', true]
     );
+    const userId = (result.rows[0] as { id: string }).id;
     this.userToDbId.set(userCode, userId);
     return userId;
   }
