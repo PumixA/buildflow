@@ -1,10 +1,17 @@
+'use client';
+
 import { StatusBadge } from '../../components/badges';
 import { DashboardShell } from '../../components/dashboard-shell';
 import { SyncChart } from '../../components/sync-chart';
 import { fetchHseDashboard } from '../../lib/api';
+import { usePoll } from '../../lib/use-poll';
 
-export default async function HseDashboardPage() {
-  const { kpi, activity } = await fetchHseDashboard();
+// Composant client : comme la fiche détail, le rendu serveur n'a pas de token
+// et recevait un 401 rendu à l'écran comme un tableau de bord vide.
+export default function HseDashboardPage() {
+  const { data } = usePoll(fetchHseDashboard);
+  const kpi = data?.kpi ?? { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 };
+  const activity = data?.activity ?? [];
 
   return (
     <DashboardShell title="Tableau de Bord HSE">

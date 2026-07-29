@@ -1,25 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { PriorityBadge, StatusBadge, WormBadge } from '../../components/badges';
 import { DashboardShell } from '../../components/dashboard-shell';
 import { fetchNcrList } from '../../lib/api';
-import { NcrItem } from '../../lib/types';
+import { usePoll } from '../../lib/use-poll';
 
 export default function NcrListPage() {
-  const [rows, setRows] = useState<NcrItem[]>([]);
   const [query, setQuery] = useState('');
   const [chantier, setChantier] = useState('all');
   const [statut, setStatut] = useState('all');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNcrList().then((data) => {
-      setRows(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+  const { data, loading, lastUpdate } = usePoll(fetchNcrList);
+  const rows = data ?? [];
 
   const filteredRows = rows.filter((row) => {
     if (query && !`${row.id} ${row.chantier} ${row.description}`.toLowerCase().includes(query.toLowerCase())) return false;
@@ -50,7 +44,11 @@ export default function NcrListPage() {
             <button onClick={() => {}} className="filter-button">Filtrer</button>
           </div>
           <p className="toolbar-meta">
-            {loading ? 'Chargement...' : `Résultats: ${filteredRows.length}`}
+            {loading
+              ? 'Chargement...'
+              : `Résultats: ${filteredRows.length}${
+                  lastUpdate ? ` — maj ${lastUpdate.toLocaleTimeString('fr-FR')}` : ''
+                }`}
           </p>
         </div>
         <table className="table">
