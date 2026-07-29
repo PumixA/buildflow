@@ -1,18 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { PriorityBadge, StatusBadge, WormBadge } from '../../components/badges';
 import { DashboardShell } from '../../components/dashboard-shell';
 import { fetchNcrList } from '../../lib/api';
 import { usePoll } from '../../lib/use-poll';
+import { useWorksite } from '../../lib/worksite';
 
 export default function NcrListPage() {
   const [query, setQuery] = useState('');
   const [chantier, setChantier] = useState('all');
   const [statut, setStatut] = useState('all');
+  const { worksite } = useWorksite();
 
-  const { data, loading, lastUpdate } = usePoll(fetchNcrList);
+  // Ouvrir un chantier restreint la liste à ses NCR, côté API. Sans chantier
+  // actif on garde la vue transversale, utile à la direction des travaux.
+  const charger = useCallback(() => fetchNcrList(worksite?.name), [worksite?.name]);
+  const { data, loading, lastUpdate } = usePoll(charger, undefined, worksite?.name ?? 'all');
   const rows = data ?? [];
 
   const filteredRows = rows.filter((row) => {
@@ -42,6 +47,7 @@ export default function NcrListPage() {
               <option value="RESOLU">Résolu</option>
             </select>
             <button onClick={() => {}} className="filter-button">Filtrer</button>
+            <Link href="/ncr/nouveau" className="filter-button">+ Nouvelle NCR</Link>
           </div>
           <p className="toolbar-meta">
             {loading

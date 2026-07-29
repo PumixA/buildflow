@@ -10,6 +10,16 @@ export type NcrItem = {
   dateSignalement: string;
 };
 
+export type Worksite = {
+  id: string;
+  nom: string;
+  localisation: string | null;
+  statut: string;
+  ncrOuvertes: number;
+  ncrTotal: number;
+  dateOuverture: string;
+};
+
 export type HseKpi = {
   crashFreeMobile: number;
   uptime: number;
