@@ -13,7 +13,7 @@ export class HseController {
 
   @Get('dashboard')
   @Roles('RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
-  dashboard(): ReturnType<HseService['dashboard']> {
+  async dashboard(): Promise<Awaited<ReturnType<HseService['dashboard']>>> {
     return this.hseService.dashboard();
   }
 

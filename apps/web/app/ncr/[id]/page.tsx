@@ -1,14 +1,35 @@
+'use client';
+
+import { use } from 'react';
 import { PriorityBadge, StatusBadge, WormBadge } from '../../../components/badges';
 import { DashboardShell } from '../../../components/dashboard-shell';
 import { fetchNcrDetail } from '../../../lib/api';
+import { usePoll } from '../../../lib/use-poll';
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
-export default async function NcrDetailPage({ params }: Props) {
-  const resolvedParams = await params;
-  const detail = await fetchNcrDetail(resolvedParams.id);
+/**
+ * Composant client, et non serveur.
+ *
+ * Le rendu serveur n'a pas accès au token (il vit dans le navigateur) : la page
+ * appelait l'API sans authentification valide, recevait un 401 et l'affichait
+ * comme « NCR introuvable » — quelle que soit l'existence réelle de la NCR.
+ */
+export default function NcrDetailPage({ params }: Props) {
+  const { id } = use(params);
+  const { data: detail, loading } = usePoll(() => fetchNcrDetail(id));
+
+  if (loading) {
+    return (
+      <DashboardShell title="Fiche Détail NCR">
+        <section className="panel">
+          <p>Chargement…</p>
+        </section>
+      </DashboardShell>
+    );
+  }
 
   if (!detail) {
     return (
@@ -24,8 +45,11 @@ export default async function NcrDetailPage({ params }: Props) {
     <DashboardShell title="Fiche Détail NCR">
       <section className="detail-grid">
         <div className="panel">
-          <h2>{detail.id}</h2>
+          {/* Le titre était absent de l'écran : l'en-tête affichait l'UUID brut,
+              et la seule trace du libellé saisi restait en base. */}
+          <h2>{detail.titre}</h2>
           <p className="subtitle">{detail.description}</p>
+          <p className="field-hint">Référence: {detail.id}</p>
           <div className="info-grid">
             <div className="info-box">
               <h3>Coordonnées GPS</h3>
@@ -58,15 +82,21 @@ export default async function NcrDetailPage({ params }: Props) {
         <div className="side-column">
           <div className="panel">
             <h3>Preuves Photographiques</h3>
-            <div className="proof-grid">
-              <div className="proof-card">
-                <span>IMG_001.jpg</span>
-              </div>
-              <div className="proof-card">
-                <span>IMG_002.jpg</span>
-              </div>
-            </div>
-            <p className="worm-note">Archivage WORM certifié, hash SHA-256 validé.</p>
+            {detail.worm ? (
+              <>
+                <div className="proof-grid">
+                  <div className="proof-card">
+                    <span>IMG_001.jpg</span>
+                  </div>
+                  <div className="proof-card">
+                    <span>IMG_002.jpg</span>
+                  </div>
+                </div>
+                <p className="worm-note">Archivage WORM certifié, hash SHA-256 validé.</p>
+              </>
+            ) : (
+              <p className="worm-note">Aucune preuve archivée pour cette NCR.</p>
+            )}
           </div>
           <div className="panel">
             <h3>Historique des Actions</h3>

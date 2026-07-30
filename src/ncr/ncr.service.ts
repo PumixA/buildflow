@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Ncr, NcrStatus } from '../../libs/domain/src/models';
 
 export type NcrPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -39,7 +40,11 @@ export class NcrService {
 
   createNCR(input: CreateNcrInput): ManagedNcr {
     this.assertCreatePayload(input);
-    const id = `ncr-${this.entries.size + 1}`;
+    // Identifiant aléatoire et non séquentiel : le compteur `ncr-${size + 1}`
+    // repartait à 1 à chaque redémarrage du process et réattribuait des
+    // identifiants déjà persistés, ce qui écrasait silencieusement des NCR
+    // existantes en base.
+    const id = randomUUID();
     const now = new Date().toISOString();
 
     const created: ManagedNcr = {

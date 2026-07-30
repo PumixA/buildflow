@@ -8,12 +8,13 @@ import { HealthModule } from './health/health.module';
 import { HseModule } from './hse/hse.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { NcrModule } from './ncr/ncr.module';
+import { ProjectsModule } from './projects/projects.module';
 import { ReportingModule } from './reporting/reporting.module';
 import { StorageModule } from './storage/storage.module';
 import { SyncModule } from './sync/sync.module';
 
 @Module({
-  imports: [DatabaseModule, MessagingModule, HealthModule, NcrModule, HseModule, AuthModule, ReportingModule, SyncModule, StorageModule, AuditModule],
+  imports: [DatabaseModule, MessagingModule, HealthModule, NcrModule, ProjectsModule, HseModule, AuthModule, ReportingModule, SyncModule, StorageModule, AuditModule],
   providers: [
     {
       provide: APP_GUARD,

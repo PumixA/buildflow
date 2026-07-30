@@ -1,5 +1,6 @@
 export type NcrItem = {
   id: string;
+  titre: string;
   chantier: string;
   description: string;
   statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';
@@ -8,6 +9,16 @@ export type NcrItem = {
   latitude: number;
   longitude: number;
   dateSignalement: string;
+};
+
+export type Worksite = {
+  id: string;
+  nom: string;
+  localisation: string | null;
+  statut: string;
+  ncrOuvertes: number;
+  ncrTotal: number;
+  dateOuverture: string;
 };
 
 export type HseKpi = {
@@ -19,7 +30,17 @@ export type HseKpi = {
 
 export type HseActivity = {
   id: string;
+  libelle: string;
   chantier: string;
   statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';
   ilYA: string;
+};
+
+export type ActionEnRetard = {
+  id: string;
+  description: string;
+  responsable: string;
+  echeance: string;
+  joursDeRetard: number;
+  statut: string;
 };

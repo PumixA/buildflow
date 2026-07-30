@@ -8,14 +8,17 @@ export default function HomePage() {
         <h2>Navigation rapide</h2>
         <p>Accès direct aux écrans de pilotage du livrable.</p>
         <div className="quick-links">
-          <Link href="/hse" className="cta-link">
-            Ouvrir le dashboard HSE
+          <Link href="/chantiers" className="cta-link">
+            Ouvrir un chantier
           </Link>
           <Link href="/ncr" className="cta-link">
             Ouvrir la liste des NCR
           </Link>
-          <Link href="/ncr/NCR-2024-0155" className="cta-link">
-            Ouvrir la fiche NCR
+          <Link href="/ncr/nouveau" className="cta-link">
+            Déclarer une NCR
+          </Link>
+          <Link href="/hse" className="cta-link">
+            Ouvrir le dashboard HSE
           </Link>
         </div>
       </section>
