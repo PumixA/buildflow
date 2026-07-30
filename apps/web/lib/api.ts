@@ -1,4 +1,4 @@
-import { HseActivity, HseKpi, NcrItem } from './types';
+import { HseActivity, HseKpi, NcrItem, Worksite } from './types';
 import { getAuthHeaders } from './auth';
 
 const API_BASE_URL = typeof window === 'undefined'
@@ -77,8 +77,70 @@ async function safeJson<T>(path: string): Promise<T | null> {
   }
 }
 
-export async function fetchNcrList(): Promise<NcrItem[]> {
-  const res = await safeJson<{ items: BackendNcr[] } & Record<string, unknown>>('/ncr');
+/**
+ * Écritures : contrairement à `safeJson`, on laisse remonter l'erreur.
+ *
+ * Avaler l'échec d'un POST afficherait un formulaire qui semble avoir
+ * fonctionné alors que rien n'a été enregistré.
+ */
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string | string[] } | null;
+    // NestJS renvoie un tableau de messages quand le ValidationPipe rejette le corps.
+    const message = Array.isArray(payload?.message) ? payload?.message.join(', ') : payload?.message;
+    throw new Error(message || `Échec de la requête (HTTP ${response.status})`);
+  }
+
+  return (await response.json()) as T;
+}
+
+type BackendProject = {
+  id: string;
+  name: string;
+  locationGps: string | null;
+  status: string;
+  createdAt: string;
+  openNcrCount: number;
+  totalNcrCount: number;
+};
+
+function toWorksite(project: BackendProject): Worksite {
+  return {
+    id: project.id,
+    nom: project.name,
+    localisation: project.locationGps,
+    statut: project.status,
+    ncrOuvertes: project.openNcrCount,
+    ncrTotal: project.totalNcrCount,
+    dateOuverture: formatDate(project.createdAt)
+  };
+}
+
+export async function fetchWorksites(): Promise<Worksite[]> {
+  const res = await safeJson<{ items: BackendProject[]; total: number }>('/projects');
+  return (res?.items ?? []).map(toWorksite);
+}
+
+export async function createWorksite(input: {
+  name: string;
+  locationGps?: string;
+  actorId: string;
+}): Promise<Worksite> {
+  const created = await postJson<BackendProject>('/projects', input);
+  return toWorksite(created);
+}
+
+export async function fetchNcrList(projectId?: string): Promise<NcrItem[]> {
+  // Le filtre est appliqué en SQL côté API : filtrer après coup ne verrait que
+  // les 100 premières NCR tous chantiers confondus.
+  const path = projectId ? `/ncr?projectId=${encodeURIComponent(projectId)}` : '/ncr';
+  const res = await safeJson<{ items: BackendNcr[] } & Record<string, unknown>>(path);
   const backendList: BackendNcr[] = res?.items ?? [];
   if (backendList.length === 0) {
     return [];
