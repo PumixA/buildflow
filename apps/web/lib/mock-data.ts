@@ -3,6 +3,7 @@ import { HseActivity, HseKpi, NcrItem } from './types';
 export const mockNcrList: NcrItem[] = [
   {
     id: 'NCR-2024-0156',
+    titre: 'Défaut de coffrage niveau 3',
     chantier: 'Lyon Part-Dieu',
     description: 'Défaut de coffrage béton niveau 3',
     statut: 'RESOLU',
@@ -14,6 +15,7 @@ export const mockNcrList: NcrItem[] = [
   },
   {
     id: 'NCR-2024-0155',
+    titre: 'Échafaudage non conforme',
     chantier: 'Paris La Défense T4',
     description: 'Non-conformité sécurité échafaudage',
     statut: 'EN_ANALYSE',
@@ -25,6 +27,7 @@ export const mockNcrList: NcrItem[] = [
   },
   {
     id: 'NCR-2024-0154',
+    titre: "Défaut d'étanchéité toiture",
     chantier: 'Marseille Port',
     description: 'Problème étanchéité toiture terrasse',
     statut: 'OUVERT',
@@ -36,6 +39,7 @@ export const mockNcrList: NcrItem[] = [
   },
   {
     id: 'NCR-2024-0153',
+    titre: 'Écart dimensionnel cloisons',
     chantier: 'Bordeaux Euratlantique',
     description: 'Écart dimensionnel cloisons',
     statut: 'RESOLU',

@@ -8,6 +8,7 @@ const API_BASE_URL = typeof window === 'undefined'
 type BackendNcr = {
   id: string;
   projectId: string;
+  title: string;
   description: string;
   status: 'OPEN' | 'IN_ANALYSIS' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -136,6 +137,22 @@ export async function createWorksite(input: {
   return toWorksite(created);
 }
 
+export type CreateNcrInput = {
+  /** Code chantier (`projects.name`), pas l'UUID : c'est ce que l'API résout. */
+  projectId: string;
+  creatorId: string;
+  title: string;
+  description: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  latitude: number;
+  longitude: number;
+  photos: string[];
+};
+
+export async function createNcr(input: CreateNcrInput): Promise<{ id: string }> {
+  return postJson<{ id: string }>('/ncr', input);
+}
+
 export async function fetchNcrList(projectId?: string): Promise<NcrItem[]> {
   // Le filtre est appliqué en SQL côté API : filtrer après coup ne verrait que
   // les 100 premières NCR tous chantiers confondus.
@@ -148,6 +165,7 @@ export async function fetchNcrList(projectId?: string): Promise<NcrItem[]> {
 
   return backendList.map((item) => ({
     id: item.id,
+    titre: item.title || 'Sans titre',
     chantier: item.projectId,
     description: item.description || 'Sans description',
     statut: toUiStatus(item.status),
@@ -167,6 +185,7 @@ export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
 
   return {
     id: backendItem.id,
+    titre: backendItem.title || 'Sans titre',
     chantier: backendItem.projectId,
     description: backendItem.description || 'Sans description',
     statut: toUiStatus(backendItem.status),

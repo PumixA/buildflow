@@ -1,5 +1,6 @@
 export type NcrItem = {
   id: string;
+  titre: string;
   chantier: string;
   description: string;
   statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';

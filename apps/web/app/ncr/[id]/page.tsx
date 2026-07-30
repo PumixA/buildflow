@@ -45,8 +45,11 @@ export default function NcrDetailPage({ params }: Props) {
     <DashboardShell title="Fiche Détail NCR">
       <section className="detail-grid">
         <div className="panel">
-          <h2>{detail.id}</h2>
+          {/* Le titre était absent de l'écran : l'en-tête affichait l'UUID brut,
+              et la seule trace du libellé saisi restait en base. */}
+          <h2>{detail.titre}</h2>
           <p className="subtitle">{detail.description}</p>
+          <p className="field-hint">Référence: {detail.id}</p>
           <div className="info-grid">
             <div className="info-box">
               <h3>Coordonnées GPS</h3>

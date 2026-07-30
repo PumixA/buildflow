@@ -285,7 +285,12 @@ export class NcrService {
     // Upsert atomique plutôt que SELECT-puis-INSERT : deux créations simultanées
     // passeraient toutes deux le SELECT et la seconde violerait `users_email_key`.
     // `DO UPDATE` (et non `DO NOTHING`) garantit que RETURNING renvoie toujours la ligne.
-    const email = `${userCode.toLowerCase()}@buildflow.io`;
+    // Le code auteur est un identifiant applicatif ("USER-1") côté mobile, mais
+    // l'adresse du compte connecté côté web. Sans ce test on fabriquait
+    // "admin@buildflow.io@buildflow.io" et chaque saisie web créait un
+    // enregistrement distinct.
+    const normalized = userCode.toLowerCase();
+    const email = normalized.includes('@') ? normalized : `${normalized}@buildflow.io`;
     const result = await this.databaseService.query(
       `INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW())

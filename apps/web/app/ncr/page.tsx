@@ -21,7 +21,7 @@ export default function NcrListPage() {
   const rows = data ?? [];
 
   const filteredRows = rows.filter((row) => {
-    if (query && !`${row.id} ${row.chantier} ${row.description}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (query && !`${row.id} ${row.titre} ${row.chantier} ${row.description}`.toLowerCase().includes(query.toLowerCase())) return false;
     if (chantier !== 'all' && row.chantier !== chantier) return false;
     if (statut !== 'all' && row.statut !== statut) return false;
     return true;
@@ -60,13 +60,15 @@ export default function NcrListPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>ID</th><th>Chantier</th><th>Description</th><th>Statut</th><th>Priorité</th><th>WORM</th><th>Action</th>
+              <th>Titre</th><th>Chantier</th><th>Description</th><th>Statut</th><th>Priorité</th><th>WORM</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.map((row) => (
               <tr key={row.id}>
-                <td className="id-cell">{row.id}</td>
+                {/* La colonne affichait l'UUID brut sur deux lignes, sans jamais
+                    montrer le titre saisi. */}
+                <td className="id-cell">{row.titre}</td>
                 <td>{row.chantier}</td>
                 <td>{row.description}</td>
                 <td><StatusBadge value={row.statut} /></td>

@@ -574,6 +574,22 @@ a {
   font-size: 12px;
 }
 
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #71b0ff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.ncr-form input[type='file'] {
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
 .form-error {
   grid-column: 1 / -1;
   margin: 0;
