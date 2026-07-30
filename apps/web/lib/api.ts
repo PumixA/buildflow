@@ -37,7 +37,13 @@ type BackendHseDashboard = {
   totalOpen: number;
   criticalOpen: number;
   immediateAlerts: number;
-  latestIncidents: Array<{ id: string; projectId: string; status: string }>;
+  latestIncidents: Array<{
+    id: string;
+    projectId: string;
+    status: string;
+    type?: string;
+    description?: string;
+  }>;
   overdueActions?: Array<{
     id: string;
     description: string;
@@ -233,6 +239,10 @@ export async function fetchHseDashboard(): Promise<{
 
   const activity: HseActivity[] = backend.latestIncidents.map((incident, index) => ({
     id: incident.id,
+    // L'identifiant en base est un UUID technique : l'afficher ne dit rien à un
+    // responsable QSE. On montre la nature de l'incident, et sa description en
+    // secours si le type venait à manquer.
+    libelle: incident.type || incident.description || 'Incident',
     chantier: incident.projectId,
     statut: incident.status === 'RESOLVED' ? 'RESOLU' : incident.status === 'OPEN' ? 'OUVERT' : 'EN_ANALYSE',
     ilYA: `${index + 1} h`

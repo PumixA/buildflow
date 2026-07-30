@@ -46,7 +46,7 @@ export default function HseDashboardPage() {
             {activity.map((item) => (
               <li key={item.id}>
                 <div>
-                  <p className="activity-id">{item.id}</p>
+                  <p className="activity-id">{item.libelle}</p>
                   <p className="activity-site">{item.chantier}</p>
                 </div>
                 <div className="activity-meta">

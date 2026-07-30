@@ -59,8 +59,8 @@ export const mockHseKpi: HseKpi = {
 };
 
 export const mockHseActivity: HseActivity[] = [
-  { id: 'NCR-2024-0156', chantier: 'Lyon Part-Dieu', statut: 'RESOLU', ilYA: '15 min' },
-  { id: 'NCR-2024-0155', chantier: 'Paris La Défense T4', statut: 'EN_ANALYSE', ilYA: '32 min' },
-  { id: 'NCR-2024-0154', chantier: 'Marseille Port', statut: 'OUVERT', ilYA: '1 h' },
-  { id: 'NCR-2024-0153', chantier: 'Bordeaux Euratlantique', statut: 'RESOLU', ilYA: '2 h' }
+  { id: 'NCR-2024-0156', libelle: 'CHUTE_HAUTEUR', chantier: 'Lyon Part-Dieu', statut: 'RESOLU', ilYA: '15 min' },
+  { id: 'NCR-2024-0155', libelle: 'FERRAILLAGE', chantier: 'Paris La Défense T4', statut: 'EN_ANALYSE', ilYA: '32 min' },
+  { id: 'NCR-2024-0154', libelle: 'EPI_MANQUANT', chantier: 'Marseille Port', statut: 'OUVERT', ilYA: '1 h' },
+  { id: 'NCR-2024-0153', libelle: 'ETANCHEITE', chantier: 'Bordeaux Euratlantique', statut: 'RESOLU', ilYA: '2 h' }
 ];

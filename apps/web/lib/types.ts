@@ -30,6 +30,7 @@ export type HseKpi = {
 
 export type HseActivity = {
   id: string;
+  libelle: string;
   chantier: string;
   statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';
   ilYA: string;
