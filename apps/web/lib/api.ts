@@ -13,7 +13,24 @@ type BackendNcr = {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   latitude: number;
   longitude: number;
+  createdAt?: string;
+  closureProofs?: string[];
 };
+
+function formatDate(iso?: string): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('fr-FR');
+}
+
+/**
+ * Le badge WORM ne doit refléter qu'un archivage réel.
+ * Il était affiché en dur sur chaque ligne, y compris pour des NCR sans
+ * aucune preuve scellée — indéfendable sur un produit à finalité probatoire.
+ */
+function hasWormProof(item: BackendNcr): boolean {
+  return (item.closureProofs?.length ?? 0) > 0;
+}
 
 type BackendHseDashboard = {
   totalOpen: number;
@@ -73,10 +90,10 @@ export async function fetchNcrList(): Promise<NcrItem[]> {
     description: item.description || 'Sans description',
     statut: toUiStatus(item.status),
     priorite: toUiPriority(item.priority),
-    worm: true,
+    worm: hasWormProof(item),
     latitude: item.latitude,
     longitude: item.longitude,
-    dateSignalement: new Date().toLocaleDateString('fr-FR')
+    dateSignalement: formatDate(item.createdAt)
   }));
 }
 
@@ -92,10 +109,10 @@ export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
     description: backendItem.description || 'Sans description',
     statut: toUiStatus(backendItem.status),
     priorite: toUiPriority(backendItem.priority),
-    worm: true,
+    worm: hasWormProof(backendItem),
     latitude: backendItem.latitude,
     longitude: backendItem.longitude,
-    dateSignalement: new Date().toLocaleDateString('fr-FR')
+    dateSignalement: formatDate(backendItem.createdAt)
   };
 }
 
