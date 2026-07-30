@@ -2,7 +2,7 @@
 
 ## Livrables créés
 
-- `infra/database/schema.sql`
+- `infra/database/migrations/` (source unique du schéma, appliquée au démarrage de l'API)
 - `infra/database/migrations/001_init_buildflow.sql`
 - `libs/domain/src/models.ts`
 - `libs/domain/src/events.ts`
