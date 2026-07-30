@@ -62,6 +62,10 @@ services:
       OIDC_AUDIENCE: buildflow-api
       OIDC_JWKS_URI: http://localhost:8080/realms/buildflow/protocol/openid-connect/certs
       OIDC_REQUIRE_MFA: "false"
+      # Volontairement sans valeur par défaut : un secret écrit ici serait publié
+      # dans le dépôt, donc équivalent à pas de secret. Compose refuse de démarrer
+      # tant que la variable n'est pas fournie (fichier .env, non versionné).
+      JWT_SECRET: ${JWT_SECRET:?manquant - generer avec openssl rand -hex 32 puis renseigner .env}
       S3_REGION: eu-west-3
       S3_ENDPOINT: http://minio:9000
       S3_WORM_BUCKET: buildflow-worm-evidences

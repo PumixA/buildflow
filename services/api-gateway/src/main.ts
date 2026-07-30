@@ -18,9 +18,14 @@ if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
 
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { resolveJwtSecret } from '../../../src/auth/auth.service';
 import { AppModule } from './modules/app.module';
 
 async function bootstrap(): Promise<void> {
+  // Fail-fast : mieux vaut refuser de démarrer que de servir des jetons signés
+  // avec un secret lisible dans le dépôt. Le détail est dans resolveJwtSecret().
+  resolveJwtSecret();
+
   const app = await NestFactory.create(AppModule, {
     cors: {
       origin: ['http://localhost:3001', 'http://127.0.0.1:3001'],
@@ -40,4 +45,9 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
 }
 
-void bootstrap();
+void bootstrap().catch((err: unknown) => {
+  // Sans ce `catch`, un échec de démarrage laisse le process sortir en code 0 :
+  // Docker y voit un arrêt normal au lieu d'une configuration refusée.
+  console.error(`[Bootstrap] Démarrage interrompu : ${(err as Error).message}`);
+  process.exit(1);
+});

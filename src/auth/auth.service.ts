@@ -14,11 +14,68 @@ type UserRecord = {
   mfaRequired: boolean;
 };
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'buildflow-dev-secret-change-in-production'
-);
+/**
+ * Valeur sur laquelle le code retombait jusqu'ici quand JWT_SECRET était absent.
+ * Elle est publiée dans le dépôt : un jeton signé avec elle doit être traité
+ * comme forgé, jamais comme une session légitime.
+ */
+const PUBLISHED_FALLBACK_SECRET = 'buildflow-dev-secret-change-in-production';
+
+/** En dessous de cette longueur, un secret HS256 se bruteforce hors ligne. */
+const MIN_SECRET_LENGTH = 32;
+
 const JWT_ISSUER = process.env.OIDC_ISSUER ?? 'buildflow';
 const JWT_AUDIENCE = process.env.OIDC_AUDIENCE ?? 'buildflow-api';
+
+function isRelaxedEnvironment(): boolean {
+  const env = process.env.NODE_ENV;
+  return env === 'development' || env === 'test';
+}
+
+/**
+ * Résout la clé de signature des jetons, en échouant plutôt qu'en devinant.
+ *
+ * Avant ce correctif, l'absence de `JWT_SECRET` faisait silencieusement retomber
+ * la signature sur `PUBLISHED_FALLBACK_SECRET` — et `docker-compose.yml` ne
+ * définissait pas la variable. Le déploiement livré tournait donc avec un secret
+ * lisible dans le dépôt : n'importe qui pouvait signer un jeton `ADMIN` pour un
+ * sujet inexistant et obtenir 200 sur `/ncr` comme sur `/audit/logs`.
+ *
+ * Le repli n'est désormais toléré qu'avec `NODE_ENV=development` ou `test`. Une
+ * variable `NODE_ENV` absente est traitée comme un environnement non fiable :
+ * le comportement par omission doit être le refus, pas l'acceptation.
+ */
+export function resolveJwtSecret(): Uint8Array {
+  const configured = process.env.JWT_SECRET?.trim();
+  const relaxed = isRelaxedEnvironment();
+
+  if (!configured) {
+    if (!relaxed) {
+      throw new Error(
+        'JWT_SECRET est absent. Le secret de signature des jetons doit être fourni ' +
+          `explicitement hors développement (NODE_ENV=${process.env.NODE_ENV ?? 'non défini'}). ` +
+          'Générer une valeur avec : openssl rand -hex 32'
+      );
+    }
+    return new TextEncoder().encode(PUBLISHED_FALLBACK_SECRET);
+  }
+
+  if (!relaxed && configured === PUBLISHED_FALLBACK_SECRET) {
+    throw new Error(
+      'JWT_SECRET reprend la valeur de développement publiée dans le dépôt, connue ' +
+        'de quiconque peut lire le code. Générer un secret propre : openssl rand -hex 32'
+    );
+  }
+
+  if (!relaxed && configured.length < MIN_SECRET_LENGTH) {
+    throw new Error(
+      `JWT_SECRET est trop court (${configured.length} caractères, minimum ` +
+        `${MIN_SECRET_LENGTH}). Générer une valeur avec : openssl rand -hex 32`
+    );
+  }
+
+  return new TextEncoder().encode(configured);
+}
 
 export class AuthService {
   private readonly users: UserRecord[] = [
@@ -69,7 +126,7 @@ export class AuthService {
       .setAudience(JWT_AUDIENCE)
       .setIssuedAt()
       .setExpirationTime('24h')
-      .sign(JWT_SECRET);
+      .sign(resolveJwtSecret());
 
     return {
       accessToken,
@@ -80,7 +137,10 @@ export class AuthService {
 
   async verifyLocalToken(token: string): Promise<{ valid: boolean; roles: Role[]; mfaValidated: boolean }> {
     try {
-      const { payload } = await jwtVerify(token, JWT_SECRET, {
+      // La résolution est volontairement dans le `try` : une configuration
+      // invalide doit se traduire par un refus d'authentification, pas par une
+      // exception qui remonterait en 500.
+      const { payload } = await jwtVerify(token, resolveJwtSecret(), {
         issuer: JWT_ISSUER,
         audience: JWT_AUDIENCE
       });
