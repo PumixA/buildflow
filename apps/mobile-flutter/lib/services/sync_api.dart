@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'auth_service.dart';
 import 'local_store.dart';
 
 class SyncApi {
   static final GlobalKey<ScaffoldMessengerState> scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
 
+  // 10.0.2.2 est l'alias de la machine hôte depuis l'émulateur Android ;
+  // `localhost` y désigne l'émulateur lui-même, où rien n'écoute.
   static const String _apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000'
+    defaultValue: 'http://10.0.2.2:3000'
   );
 
   final LocalStore store;
@@ -29,11 +32,14 @@ class SyncApi {
       }
     };
 
+    // `x-role` n'est accepté par l'API qu'en mode développement : en production
+    // toute synchronisation repartait en 401. On envoie le token de session.
+    final auth = await AuthService.instance.authHeaders();
     final response = await http.post(
       Uri.parse('$_apiBaseUrl/sync/push'),
       headers: {
         'Content-Type': 'application/json',
-        'x-role': 'RESPONSABLE_QSE'
+        ...auth
       },
       body: jsonEncode(payload)
     );
