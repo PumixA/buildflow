@@ -1,4 +1,4 @@
-import { HseActivity, HseKpi, NcrItem, Worksite } from './types';
+import { ActionEnRetard, HseActivity, HseKpi, NcrItem, Worksite } from './types';
 import { getAuthHeaders } from './auth';
 
 const API_BASE_URL = typeof window === 'undefined'
@@ -38,6 +38,15 @@ type BackendHseDashboard = {
   criticalOpen: number;
   immediateAlerts: number;
   latestIncidents: Array<{ id: string; projectId: string; status: string }>;
+  overdueActions?: Array<{
+    id: string;
+    description: string;
+    responsible: string;
+    deadline: string;
+    daysLate: number;
+    status: string;
+  }>;
+  overdueActionsCount?: number;
 };
 
 function toUiStatus(status: BackendNcr['status']): NcrItem['statut'] {
@@ -197,16 +206,28 @@ export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
   };
 }
 
-export async function fetchHseDashboard(): Promise<{ kpi: HseKpi; activity: HseActivity[] }> {
+export async function fetchHseDashboard(): Promise<{
+  kpi: HseKpi;
+  activity: HseActivity[];
+  actionsEnRetard: ActionEnRetard[];
+}> {
   const backend = await safeJson<BackendHseDashboard>('/hse/dashboard');
   if (!backend) {
-    return { kpi: { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 }, activity: [] };
+    return {
+      kpi: { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 },
+      activity: [],
+      actionsEnRetard: []
+    };
   }
 
   const kpi: HseKpi = {
+    // TODO(2.3) : ces trois valeurs restent codées en dur. `/reporting/kpi`
+    // renvoie des cibles, pas des mesures — il n'y a pas encore de source réelle.
     crashFreeMobile: 99.7,
     uptime: 99.95,
     delaiClotureNcrJours: 4.2,
+    // Compté en base depuis la table `ncr` (auparavant : incidents en mémoire,
+    // d'où le « 0 » affiché alors que la liste montrait 25 NCR).
     ncrOuvertes: backend.totalOpen
   };
 
@@ -217,5 +238,14 @@ export async function fetchHseDashboard(): Promise<{ kpi: HseKpi; activity: HseA
     ilYA: `${index + 1} h`
   }));
 
-  return { kpi, activity };
+  const actionsEnRetard: ActionEnRetard[] = (backend.overdueActions ?? []).map((action) => ({
+    id: action.id,
+    description: action.description,
+    responsable: action.responsible,
+    echeance: formatDate(action.deadline),
+    joursDeRetard: action.daysLate,
+    statut: action.status
+  }));
+
+  return { kpi, activity, actionsEnRetard };
 }
