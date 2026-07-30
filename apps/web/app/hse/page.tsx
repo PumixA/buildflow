@@ -12,6 +12,7 @@ export default function HseDashboardPage() {
   const { data } = usePoll(fetchHseDashboard);
   const kpi = data?.kpi ?? { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 };
   const activity = data?.activity ?? [];
+  const actionsEnRetard = data?.actionsEnRetard ?? [];
 
   return (
     <DashboardShell title="Tableau de Bord HSE">
@@ -45,7 +46,7 @@ export default function HseDashboardPage() {
             {activity.map((item) => (
               <li key={item.id}>
                 <div>
-                  <p className="activity-id">{item.id}</p>
+                  <p className="activity-id">{item.libelle}</p>
                   <p className="activity-site">{item.chantier}</p>
                 </div>
                 <div className="activity-meta">
@@ -56,6 +57,46 @@ export default function HseDashboardPage() {
             ))}
           </ul>
         </div>
+      </section>
+      <section className="panel">
+        <div className="toolbar">
+          <div>
+            <h3>Actions en retard</h3>
+            <p className="toolbar-meta">
+              {actionsEnRetard.length === 0
+                ? 'Aucune action corrective dont l’échéance est dépassée.'
+                : `${actionsEnRetard.length} action${actionsEnRetard.length > 1 ? 's' : ''} corrective${
+                    actionsEnRetard.length > 1 ? 's' : ''
+                  } au-delà de l’échéance`}
+            </p>
+          </div>
+        </div>
+        {actionsEnRetard.length > 0 && (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Action</th><th>Responsable</th><th>Échéance</th><th>Retard</th><th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actionsEnRetard.map((action) => (
+                <tr key={action.id}>
+                  <td>{action.description}</td>
+                  <td>{action.responsable}</td>
+                  <td>{action.echeance}</td>
+                  <td>
+                    <span className="badge retard">
+                      {action.joursDeRetard} jour{action.joursDeRetard > 1 ? 's' : ''}
+                    </span>
+                  </td>
+                  <td>
+                    <StatusBadge value={action.statut === 'OPEN' ? 'OUVERT' : 'EN_ANALYSE'} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </DashboardShell>
   );

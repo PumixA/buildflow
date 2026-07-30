@@ -233,6 +233,13 @@ a {
   border-color: rgba(245, 159, 36, 0.35);
 }
 
+/* Retard d'une action corrective : rouge, distinct des statuts métier. */
+.badge.retard {
+  color: #ffb3b3;
+  background: rgba(214, 45, 45, 0.18);
+  border-color: rgba(214, 45, 45, 0.4);
+}
+
 .priority-basse {
   color: #8fd9ad;
 }
