@@ -1,8 +1,6 @@
 services:
   postgres:
-    build:
-      context: ./infra/database
-      dockerfile: Dockerfile
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: buildflow
       POSTGRES_USER: buildflow
