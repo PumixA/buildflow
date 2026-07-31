@@ -11,6 +11,18 @@ import { DatabaseService } from '../database/database.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { WormStorageAdapter } from '../storage/worm-storage.adapter';
 
+/** Photo de constat attachée à une NCR et scellée dans le stockage WORM. */
+export type NcrPhoto = {
+  id: string;
+  url: string;
+  latitude: number | null;
+  longitude: number | null;
+  wormLocked: boolean;
+  /** Renseigné à l'écriture seulement : la base ne conserve pas le hash. */
+  hashSha256: string | null;
+  createdAt: string;
+};
+
 /**
  * Projection commune aux lectures NCR.
  *
@@ -207,6 +219,120 @@ export class NcrService {
     const updated = this.domainService.addClosureProof(ncrId, upload.url, actorId);
     this.auditService.append('ncr.closure.proof.added', actorId, { ncrId, fileName });
     return updated;
+  }
+
+  /**
+   * Résout l'identifiant technique d'une NCR en base.
+   *
+   * Les lectures acceptent aussi bien l'UUID que le `local_id` applicatif ; les
+   * écritures liées ont besoin de l'UUID, seul accepté par les clés étrangères.
+   */
+  private async resolveNcrDbId(ncrId: string): Promise<string> {
+    if (!this.databaseService.enabled) {
+      throw new NotFoundException('Base de données indisponible : photo non enregistrable');
+    }
+
+    const result = await this.databaseService.query(
+      'SELECT id FROM ncr WHERE id::text = $1 OR local_id = $1 LIMIT 1',
+      [ncrId]
+    );
+    const row = result.rows[0] as { id: string } | undefined;
+    if (!row) {
+      throw new NotFoundException(`NCR introuvable : ${ncrId}`);
+    }
+    return row.id;
+  }
+
+  /**
+   * Attache une photo de constat à une NCR, scellée en WORM.
+   *
+   * L'existence de la NCR est vérifiée **avant** tout envoi vers le stockage.
+   * `addClosureProof` fait l'inverse : il téléverse puis échoue au rattachement
+   * si la NCR n'est pas dans la mémoire du process. Chaque tentative ratée laissait
+   * alors un objet orphelin dans un bucket en Object Lock COMPLIANCE — donc
+   * impossible à supprimer pendant un an.
+   *
+   * La NCR est cherchée en base et non en mémoire : une NCR remontée du mobile par
+   * la synchronisation n'a jamais transité par la `Map` du service de domaine.
+   */
+  async addPhoto(
+    ncrId: string,
+    input: {
+      actorId: string;
+      fileName: string;
+      contentType: string;
+      payloadBase64: string;
+      latitude?: number;
+      longitude?: number;
+    }
+  ): Promise<NcrPhoto> {
+    const ncrDbId = await this.resolveNcrDbId(ncrId);
+
+    const upload = await this.wormStorage.storeEvidence({
+      fileName: input.fileName,
+      contentType: input.contentType,
+      payloadBase64: input.payloadBase64
+    });
+
+    const photoId = randomUUID();
+    await this.databaseService.query(
+      `
+      INSERT INTO ncr_photos (id, ncr_id, s3_url, geotag_lat, geotag_long, timestamp, is_worm_locked)
+      VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+      `,
+      [photoId, ncrDbId, upload.url, input.latitude ?? null, input.longitude ?? null, upload.wormLocked]
+    );
+
+    this.auditService.append('ncr.photo.added', input.actorId, {
+      ncrId: ncrDbId,
+      photoId,
+      fileName: input.fileName,
+      hashSha256: upload.hashSha256,
+      wormLocked: upload.wormLocked
+    });
+
+    return {
+      id: photoId,
+      url: upload.url,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      wormLocked: upload.wormLocked,
+      hashSha256: upload.hashSha256,
+      createdAt: upload.createdAt
+    };
+  }
+
+  /** Photos attachées à une NCR, les plus récentes d'abord. */
+  async listPhotos(ncrId: string): Promise<NcrPhoto[]> {
+    if (!this.databaseService.enabled) {
+      return [];
+    }
+
+    try {
+      const result = await this.databaseService.query(
+        `
+        SELECT p.id, p.s3_url, p.geotag_lat, p.geotag_long, p.timestamp, p.is_worm_locked
+        FROM ncr_photos p
+        JOIN ncr n ON n.id = p.ncr_id
+        WHERE n.id::text = $1 OR n.local_id = $1
+        ORDER BY p.timestamp DESC
+        `,
+        [ncrId]
+      );
+
+      return (result.rows as Array<Record<string, unknown>>).map((row) => ({
+        id: String(row.id),
+        url: String(row.s3_url ?? ''),
+        latitude: row.geotag_lat === null ? null : Number(row.geotag_lat),
+        longitude: row.geotag_long === null ? null : Number(row.geotag_long),
+        wormLocked: Boolean(row.is_worm_locked),
+        hashSha256: null,
+        createdAt: new Date(String(row.timestamp)).toISOString()
+      }));
+    } catch (err) {
+      this.logger.error(`Lecture des photos échouée : ${(err as Error).message}`);
+      return [];
+    }
   }
 
   close(ncrId: string, validatorId: string): ManagedNcr {
