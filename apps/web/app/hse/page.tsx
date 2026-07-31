@@ -10,31 +10,43 @@ import { usePoll } from '../../lib/use-poll';
 // et recevait un 401 rendu à l'écran comme un tableau de bord vide.
 export default function HseDashboardPage() {
   const { data } = usePoll(fetchHseDashboard);
-  const kpi = data?.kpi ?? { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 };
+  const kpi = data?.kpi ?? {
+    crashFreeMobile: null,
+    uptime: null,
+    delaiClotureNcrJours: null,
+    tauxSynchronisation: null,
+    ncrOuvertes: null
+  };
   const activity = data?.activity ?? [];
   const actionsEnRetard = data?.actionsEnRetard ?? [];
+
+  // Un indicateur non mesuré s'affiche en tiret. Montrer un nombre inventé sur
+  // un tableau de bord de pilotage est pire que ne rien montrer.
+  const valeur = (n: number | null, suffixe = '') => (n === null ? '—' : `${n}${suffixe}`);
 
   return (
     <DashboardShell title="Tableau de Bord HSE">
       <div className="kpi-grid">
         <article className="kpi-card">
-          <h3>Taux de Crash Mobile</h3>
-          <p className="kpi-value">{kpi.crashFreeMobile}%</p>
-          <small>Cible: 99.5%</small>
+          <h3>Taux de Synchronisation</h3>
+          <p className="kpi-value">{valeur(kpi.tauxSynchronisation, '%')}</p>
+          <small>Cible: 99.3%</small>
         </article>
         <article className="kpi-card">
           <h3>Uptime Système</h3>
-          <p className="kpi-value">{kpi.uptime}%</p>
-          <small>Cible: 99.9%</small>
+          <p className="kpi-value">{valeur(kpi.uptime, '%')}</p>
+          <small>{kpi.uptime === null ? 'Non mesuré — cible 99.9%' : 'Cible: 99.9%'}</small>
         </article>
         <article className="kpi-card">
           <h3>Délai Clôture NCR</h3>
-          <p className="kpi-value">{kpi.delaiClotureNcrJours} jours</p>
-          <small>Objectif: -20%</small>
+          <p className="kpi-value">{valeur(kpi.delaiClotureNcrJours, ' j')}</p>
+          <small>
+            {kpi.delaiClotureNcrJours === null ? 'Aucune NCR clôturée' : 'Objectif: -20%'}
+          </small>
         </article>
         <article className="kpi-card">
           <h3>NCR Ouvertes</h3>
-          <p className="kpi-value">{kpi.ncrOuvertes}</p>
+          <p className="kpi-value">{valeur(kpi.ncrOuvertes)}</p>
           <small>Cette semaine</small>
         </article>
       </div>
