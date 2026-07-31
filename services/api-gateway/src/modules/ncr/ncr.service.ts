@@ -11,6 +11,24 @@ import { DatabaseService } from '../database/database.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { WormStorageAdapter } from '../storage/worm-storage.adapter';
 
+/**
+ * Le mobile raisonne en gravité d'incident (`MINOR` / `MAJOR` / `CRITICAL`),
+ * la NCR en priorité de traitement. Sans cette traduction, la contrainte de
+ * colonne rejetterait `MINOR` et `MAJOR`.
+ */
+function severiteVersPriorite(severite?: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
+  switch ((severite ?? '').toUpperCase()) {
+    case 'MINOR':
+      return 'LOW';
+    case 'MAJOR':
+      return 'HIGH';
+    case 'CRITICAL':
+      return 'CRITICAL';
+    default:
+      return 'MEDIUM';
+  }
+}
+
 /** Photo de constat attachée à une NCR et scellée dans le stockage WORM. */
 export type NcrPhoto = {
   id: string;
@@ -222,6 +240,71 @@ export class NcrService {
   }
 
   /**
+   * Crée — ou met à jour — la NCR correspondant à un rapport remonté du terrain.
+   *
+   * `POST /sync/push` n'écrivait que dans `sync_queue` et publiait un événement
+   * `sync.completed` que personne ne consomme. Un constat saisi sur le chantier
+   * n'apparaissait donc jamais dans la liste des NCR : il restait dans une file
+   * d'attente sans consommateur, et l'application mobile affichait « SYNCED »
+   * pour une donnée qui n'existait nulle part côté métier.
+   *
+   * L'écriture est idempotente sur `local_id`, couvert par un index unique
+   * depuis la migration 002 : rejouer une synchronisation — ce que fait le
+   * mobile au retour du réseau — met à jour la NCR au lieu d'en créer une
+   * seconde.
+   */
+  async upsertFromSync(input: {
+    localId: string;
+    version: number;
+    title: string;
+    description: string;
+    severity?: string;
+    latitude?: number;
+    longitude?: number;
+    projectId?: string;
+    creatorId?: string;
+  }): Promise<string | null> {
+    if (!this.databaseService.enabled) {
+      return null;
+    }
+
+    const projectDbId = await this.ensureProject(input.projectId?.trim() || 'PROJ-1');
+    const creatorDbId = await this.ensureUser(input.creatorId?.trim() || 'MOBILE');
+
+    const result = await this.databaseService.query(
+      `
+      INSERT INTO ncr (id, project_id, creator_id, title, description, status, priority,
+                       latitude, longitude, sync_status, local_id, version, created_at, updated_at)
+      VALUES (gen_random_uuid(),$1,$2,$3,$4,'OPEN',$5,$6,$7,TRUE,$8,$9,NOW(),NOW())
+      ON CONFLICT (local_id) DO UPDATE SET
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        priority = EXCLUDED.priority,
+        latitude = EXCLUDED.latitude,
+        longitude = EXCLUDED.longitude,
+        version = EXCLUDED.version,
+        sync_status = TRUE,
+        updated_at = NOW()
+      RETURNING id
+      `,
+      [
+        projectDbId,
+        creatorDbId,
+        input.title?.trim() || 'Constat terrain',
+        input.description ?? '',
+        severiteVersPriorite(input.severity),
+        input.latitude ?? 0,
+        input.longitude ?? 0,
+        input.localId,
+        input.version ?? 1
+      ]
+    );
+
+    const row = result.rows[0] as { id: string } | undefined;
+    return row?.id ?? null;
+  }
+
+  /**
    * Résout l'identifiant technique d'une NCR en base.
    *
    * Les lectures acceptent aussi bien l'UUID que le `local_id` applicatif ; les
@@ -300,6 +383,37 @@ export class NcrService {
       hashSha256: upload.hashSha256,
       createdAt: upload.createdAt
     };
+  }
+
+  /** Relit le contenu binaire d'une photo, pour le servir à l'interface. */
+  async readPhoto(ncrId: string, photoId: string): Promise<{ body: Buffer; contentType: string }> {
+    if (!this.databaseService.enabled) {
+      throw new NotFoundException('Photo introuvable');
+    }
+
+    const result = await this.databaseService.query(
+      `
+      SELECT p.s3_url
+      FROM ncr_photos p
+      JOIN ncr n ON n.id = p.ncr_id
+      WHERE p.id::text = $1 AND (n.id::text = $2 OR n.local_id = $2)
+      LIMIT 1
+      `,
+      [photoId, ncrId]
+    );
+
+    const row = result.rows[0] as { s3_url: string } | undefined;
+    if (!row) {
+      throw new NotFoundException('Photo introuvable');
+    }
+
+    const contenu = await this.wormStorage.readEvidence(row.s3_url);
+    if (!contenu) {
+      // L'objet est référencé en base mais absent du stockage : le dire plutôt
+      // que de renvoyer une image vide qui passerait pour une photo blanche.
+      throw new NotFoundException('Contenu de la photo indisponible');
+    }
+    return contenu;
   }
 
   /** Photos attachées à une NCR, les plus récentes d'abord. */
