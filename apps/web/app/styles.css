@@ -233,6 +233,13 @@ a {
   border-color: rgba(245, 159, 36, 0.35);
 }
 
+/* Retard d'une action corrective : rouge, distinct des statuts métier. */
+.badge.retard {
+  color: #ffb3b3;
+  background: rgba(214, 45, 45, 0.18);
+  border-color: rgba(214, 45, 45, 0.4);
+}
+
 .priority-basse {
   color: #8fd9ad;
 }
@@ -458,6 +465,167 @@ a {
   color: var(--text-soft);
 }
 
+/* ===== Chantiers & formulaires de saisie ===== */
+.worksite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.worksite-card {
+  background: #0a1526;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.worksite-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px rgba(31, 125, 255, 0.35);
+}
+
+.worksite-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.worksite-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.worksite-meta {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.worksite-card .filter-button {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.worksite-form,
+.ncr-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0a1526;
+}
+
+.worksite-form {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+}
+
+.ncr-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ncr-form .field-wide {
+  grid-column: 1 / -1;
+}
+
+.worksite-form label,
+.ncr-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.worksite-form input,
+.ncr-form input,
+.ncr-form select,
+.ncr-form textarea {
+  background: #0d1b30;
+  border: 1px solid #2a446c;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.worksite-form input:focus,
+.ncr-form input:focus,
+.ncr-form select:focus,
+.ncr-form textarea:focus {
+  border-color: var(--primary);
+}
+
+.ncr-form textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.ncr-form .filter-button:disabled,
+.worksite-form .filter-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field-hint {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #71b0ff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.ncr-form input[type='file'] {
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #fca5a5;
+  background: rgba(255, 77, 79, 0.12);
+  border: 1px solid rgba(255, 77, 79, 0.45);
+}
+
+.form-success {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #9ff0b7;
+  background: rgba(24, 164, 93, 0.14);
+  border: 1px solid rgba(24, 164, 93, 0.45);
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 @media (max-width: 1200px) {
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -490,6 +658,10 @@ a {
 
   .filter-input {
     min-width: 180px;
+  }
+
+  .ncr-form {
+    grid-template-columns: 1fr;
   }
 }
 

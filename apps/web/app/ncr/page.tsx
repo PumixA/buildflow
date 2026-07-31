@@ -1,28 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { PriorityBadge, StatusBadge, WormBadge } from '../../components/badges';
 import { DashboardShell } from '../../components/dashboard-shell';
 import { fetchNcrList } from '../../lib/api';
-import { NcrItem } from '../../lib/types';
+import { usePoll } from '../../lib/use-poll';
+import { useWorksite } from '../../lib/worksite';
 
 export default function NcrListPage() {
-  const [rows, setRows] = useState<NcrItem[]>([]);
   const [query, setQuery] = useState('');
   const [chantier, setChantier] = useState('all');
   const [statut, setStatut] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const { worksite } = useWorksite();
 
-  useEffect(() => {
-    fetchNcrList().then((data) => {
-      setRows(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+  // Ouvrir un chantier restreint la liste à ses NCR, côté API. Sans chantier
+  // actif on garde la vue transversale, utile à la direction des travaux.
+  const charger = useCallback(() => fetchNcrList(worksite?.name), [worksite?.name]);
+  const { data, loading, lastUpdate } = usePoll(charger, undefined, worksite?.name ?? 'all');
+  const rows = data ?? [];
 
   const filteredRows = rows.filter((row) => {
-    if (query && !`${row.id} ${row.chantier} ${row.description}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (query && !`${row.id} ${row.titre} ${row.chantier} ${row.description}`.toLowerCase().includes(query.toLowerCase())) return false;
     if (chantier !== 'all' && row.chantier !== chantier) return false;
     if (statut !== 'all' && row.statut !== statut) return false;
     return true;
@@ -48,21 +47,28 @@ export default function NcrListPage() {
               <option value="RESOLU">Résolu</option>
             </select>
             <button onClick={() => {}} className="filter-button">Filtrer</button>
+            <Link href="/ncr/nouveau" className="filter-button">+ Nouvelle NCR</Link>
           </div>
           <p className="toolbar-meta">
-            {loading ? 'Chargement...' : `Résultats: ${filteredRows.length}`}
+            {loading
+              ? 'Chargement...'
+              : `Résultats: ${filteredRows.length}${
+                  lastUpdate ? ` — maj ${lastUpdate.toLocaleTimeString('fr-FR')}` : ''
+                }`}
           </p>
         </div>
         <table className="table">
           <thead>
             <tr>
-              <th>ID</th><th>Chantier</th><th>Description</th><th>Statut</th><th>Priorité</th><th>WORM</th><th>Action</th>
+              <th>Titre</th><th>Chantier</th><th>Description</th><th>Statut</th><th>Priorité</th><th>WORM</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.map((row) => (
               <tr key={row.id}>
-                <td className="id-cell">{row.id}</td>
+                {/* La colonne affichait l'UUID brut sur deux lignes, sans jamais
+                    montrer le titre saisi. */}
+                <td className="id-cell">{row.titre}</td>
                 <td>{row.chantier}</td>
                 <td>{row.description}</td>
                 <td><StatusBadge value={row.statut} /></td>

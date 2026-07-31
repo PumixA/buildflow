@@ -1,8 +1,6 @@
 services:
   postgres:
-    build:
-      context: ./infra/database
-      dockerfile: Dockerfile
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: buildflow
       POSTGRES_USER: buildflow
@@ -99,7 +97,7 @@ services:
         condition: service_healthy
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:0.157.0
     command: ["--config", "/etc/otel-collector.yml"]
     volumes:
       - ./infra/otel/otel-collector.yml:/etc/otel-collector.yml

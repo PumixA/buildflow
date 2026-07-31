@@ -1,17 +1,24 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
 import 'screens/ncr_create_screen.dart';
 import 'screens/sync_screen.dart';
+import 'services/auth_service.dart';
 import 'services/local_store.dart';
 import 'services/sync_api.dart';
 
-void main() {
-  runApp(const BuildFlowMobileApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Une session déjà ouverte évite de redemander les identifiants à chaque
+  // lancement — le terrain n'a pas toujours du réseau pour se reconnecter.
+  final hasSession = await AuthService.instance.restore();
+  runApp(BuildFlowMobileApp(hasSession: hasSession));
 }
 
 class BuildFlowMobileApp extends StatefulWidget {
-  const BuildFlowMobileApp({super.key});
+  final bool hasSession;
+  const BuildFlowMobileApp({super.key, this.hasSession = false});
 
   @override
   State<BuildFlowMobileApp> createState() => _BuildFlowMobileAppState();
@@ -71,8 +78,9 @@ class _BuildFlowMobileAppState extends State<BuildFlowMobileApp> {
           foregroundColor: Colors.white
         )
       ),
-      initialRoute: '/create',
+      initialRoute: widget.hasSession ? '/create' : '/login',
       routes: {
+        '/login': (context) => const LoginScreen(),
         '/create': (context) => const NcrCreateScreen(),
         '/sync': (context) => const SyncScreen()
       }
