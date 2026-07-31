@@ -20,6 +20,8 @@
     "@nestjs/common": "^11.1.7",
     "@nestjs/core": "^11.1.7",
     "@nestjs/platform-express": "^11.1.7",
+    "@nestjs/throttler": "^6.5.0",
+    "@node-rs/argon2": "^2.0.2",
     "@opentelemetry/auto-instrumentations-node": "^0.79.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.221.0",
     "@opentelemetry/sdk-node": "^0.221.0",
