@@ -108,10 +108,10 @@ describe('AuthService — non-régression de la faille C2', () => {
   });
 
   it('doit accepter un jeton réellement émis par le service', async () => {
-    const session = await service.createSession({
+    const session = await service.issueToken({
       email: 'admin@buildflow.io',
-      password: 'password',
-      mfaCode: '123456'
+      role: 'ADMIN',
+      mfaValidated: true
     });
 
     const résultat = await service.verifyLocalToken(session.accessToken);
@@ -121,23 +121,24 @@ describe('AuthService — non-régression de la faille C2', () => {
     expect(résultat.mfaValidated).toBe(true);
   });
 
-  it('doit refuser une session sans code MFA valide', async () => {
-    await expect(
-      service.createSession({
-        email: 'admin@buildflow.io',
-        password: 'password',
-        mfaCode: '000000'
-      })
-    ).rejects.toThrow(/MFA_REQUIRED/);
+  it('doit refléter l’absence de MFA dans la claim amr', async () => {
+    const session = await service.issueToken({
+      email: 'chef@buildflow.io',
+      role: 'CHEF_CHANTIER',
+      mfaValidated: false
+    });
+
+    const résultat = await service.verifyLocalToken(session.accessToken);
+
+    expect(résultat.valid).toBe(true);
+    expect(résultat.mfaValidated).toBe(false);
   });
 
-  it('doit refuser une session sur mot de passe erroné', async () => {
-    await expect(
-      service.createSession({
-        email: 'admin@buildflow.io',
-        password: 'mauvais',
-        mfaCode: '123456'
-      })
-    ).rejects.toThrow(/Identifiants invalides/);
+  it('ne doit plus exposer de vérification d’identifiants', () => {
+    // Le service de domaine portait quatre comptes en mémoire et comparait les
+    // mots de passe en clair (critique C4). Il ne signe plus que des identités
+    // déjà vérifiées par la couche qui a accès à la base.
+    expect((service as unknown as Record<string, unknown>).createSession).toBeUndefined();
+    expect((service as unknown as Record<string, unknown>).users).toBeUndefined();
   });
 });

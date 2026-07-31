@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { PriorityBadge, StatusBadge, WormBadge } from '../../../components/badges';
 import { DashboardShell } from '../../../components/dashboard-shell';
+import { PhotoPreuve } from '../../../components/photo-preuve';
 import { fetchNcrDetail } from '../../../lib/api';
 import { usePoll } from '../../../lib/use-poll';
 
@@ -40,6 +41,8 @@ export default function NcrDetailPage({ params }: Props) {
       </DashboardShell>
     );
   }
+
+  const photos = detail.photos ?? [];
 
   return (
     <DashboardShell title="Fiche Détail NCR">
@@ -82,17 +85,20 @@ export default function NcrDetailPage({ params }: Props) {
         <div className="side-column">
           <div className="panel">
             <h3>Preuves Photographiques</h3>
-            {detail.worm ? (
+            {photos.length > 0 ? (
               <>
                 <div className="proof-grid">
-                  <div className="proof-card">
-                    <span>IMG_001.jpg</span>
-                  </div>
-                  <div className="proof-card">
-                    <span>IMG_002.jpg</span>
-                  </div>
+                  {photos.map((photo) => (
+                    <PhotoPreuve key={photo.id} ncrId={detail.id} photo={photo} />
+                  ))}
                 </div>
-                <p className="worm-note">Archivage WORM certifié, hash SHA-256 validé.</p>
+                <p className="worm-note">
+                  {photos.every((photo) => photo.scellee)
+                    ? `${photos.length} preuve${photos.length > 1 ? 's' : ''} scellée${
+                        photos.length > 1 ? 's' : ''
+                      } en WORM, hash SHA-256 enregistré.`
+                    : 'Certaines preuves ne sont pas scellées : le stockage WORM n’était pas configuré à leur dépôt.'}
+                </p>
               </>
             ) : (
               <p className="worm-note">Aucune preuve archivée pour cette NCR.</p>
