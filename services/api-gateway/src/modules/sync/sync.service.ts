@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SyncService as DomainSyncService } from '../../../../../src/sync/sync.service';
 import { DatabaseService } from '../database/database.service';
+import { NcrService } from '../ncr/ncr.service';
 import { MessagingService } from '../messaging/messaging.service';
 
 type SyncRecord = {
@@ -23,7 +24,8 @@ export class SyncService {
 
   constructor(
     private readonly messagingService: MessagingService,
-    private readonly db: DatabaseService
+    private readonly db: DatabaseService,
+    private readonly ncrService: NcrService
   ) {}
 
   async status() {
@@ -61,19 +63,48 @@ export class SyncService {
 
   async push(input: SyncRecord) {
     const result = this.domain.push(input);
+    let serverId: string | null = null;
 
     if (this.db.enabled) {
+      // Une synchronisation réussie doit produire une NCR. Sans cela, le rapport
+      // restait dans `sync_queue` — que rien ne consomme — et l'application
+      // mobile affichait « SYNCED » pour une donnée absente du métier.
+      //
+      // Un conflit (409) n'écrit pas : la version poussée est obsolète, la
+      // remonter écraserait une modification plus récente.
+      if (result.httpCode !== 409) {
+        try {
+          const p = (input.payload ?? {}) as Record<string, unknown>;
+          serverId = await this.ncrService.upsertFromSync({
+            localId: input.localId,
+            version: input.version,
+            title: String(p.title ?? ''),
+            description: String(p.description ?? ''),
+            severity: p.severity as string | undefined,
+            latitude: p.latitude as number | undefined,
+            longitude: p.longitude as number | undefined,
+            projectId: p.projectId as string | undefined,
+            creatorId: p.creatorId as string | undefined
+          });
+        } catch (err) {
+          // La file reste la source de reprise : on trace sans faire échouer la
+          // synchronisation, que le mobile rejouera.
+          this.logger.error(`Création de la NCR depuis la synchronisation ${input.localId} échouée:`, err);
+        }
+      }
+
       try {
         await this.db.query(
-          `INSERT INTO sync_queue (local_id, version, payload, content_hash, status, updated_at)
-           VALUES ($1, $2, $3::jsonb, $4, $5, NOW())
+          `INSERT INTO sync_queue (local_id, version, payload, content_hash, status, server_id, updated_at)
+           VALUES ($1, $2, $3::jsonb, $4, $5, $6, NOW())
            ON CONFLICT (local_id) DO UPDATE SET
              version = EXCLUDED.version,
              payload = EXCLUDED.payload,
              content_hash = EXCLUDED.content_hash,
              status = EXCLUDED.status,
+             server_id = COALESCE(EXCLUDED.server_id, sync_queue.server_id),
              updated_at = NOW()`,
-          [input.localId, input.version, JSON.stringify(input.payload), result.contentHash, result.item.status]
+          [input.localId, input.version, JSON.stringify(input.payload), result.contentHash, result.item.status, serverId]
         );
       } catch (err) {
         this.logger.error(`Failed to persist sync push for ${input.localId}:`, err);
@@ -86,7 +117,8 @@ export class SyncService {
       payload: { localId: input.localId, httpCode: result.httpCode, contentHash: result.contentHash }
     });
 
-    return result;
+    // `serverId` permet au mobile de rattacher sa photo à la NCR créée.
+    return { ...result, serverId };
   }
 
   async resolve(input: ResolveRecord) {

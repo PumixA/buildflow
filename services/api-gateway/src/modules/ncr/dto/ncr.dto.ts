@@ -65,6 +65,39 @@ export class AssignNcrTaskDto {
   assigneeId!: string;
 }
 
+export class AddNcrPhotoDto {
+  @IsString()
+  @IsNotEmpty()
+  actorId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  fileName!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  contentType!: string;
+
+  /** Contenu binaire encodé en base64. */
+  @IsString()
+  @IsNotEmpty()
+  payloadBase64!: string;
+
+  // Géolocalisation du cliché, distincte de celle de la NCR : une même
+  // non-conformité peut être photographiée depuis plusieurs points de l'ouvrage.
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
+}
+
 export class AddClosureProofDto {
   @IsString()
   @IsNotEmpty()

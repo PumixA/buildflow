@@ -1,4 +1,4 @@
-import { ActionEnRetard, HseActivity, HseKpi, NcrItem, Worksite } from './types';
+import { ActionEnRetard, HseActivity, HseKpi, NcrItem, PhotoPreuve, Worksite } from './types';
 import { getAuthHeaders } from './auth';
 
 const API_BASE_URL = typeof window === 'undefined'
@@ -214,13 +214,50 @@ export async function fetchNcrList(projectId?: string): Promise<NcrListe> {
   return { items, total, tronque: total > items.length };
 }
 
+type BackendPhoto = {
+  id: string;
+  url: string;
+  latitude: number | null;
+  longitude: number | null;
+  wormLocked: boolean;
+  createdAt: string;
+};
+
+/**
+ * Récupère le contenu d'une photo scellée.
+ *
+ * Passe par `fetch` et non par un `<img src>` : l'endpoint exige un jeton
+ * Bearer, qu'une balise image ne sait pas transmettre. L'URL objet produite est
+ * à révoquer par l'appelant.
+ */
+export async function fetchPhotoBlob(ncrId: string, photoId: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ncr/${ncrId}/photos/${photoId}/contenu`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) return null;
+    return URL.createObjectURL(await response.blob());
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchNcrDetail(id: string): Promise<NcrItem | null> {
-  const backendItem = await safeJson<BackendNcr>(`/ncr/${id}`);
+  const backendItem = await safeJson<BackendNcr & { photoDetails?: BackendPhoto[] }>(`/ncr/${id}`);
   if (!backendItem) {
     return null;
   }
 
+  const photos: PhotoPreuve[] = (backendItem.photoDetails ?? []).map((photo) => ({
+    id: photo.id,
+    scellee: photo.wormLocked,
+    latitude: photo.latitude,
+    longitude: photo.longitude,
+    date: formatDate(photo.createdAt)
+  }));
+
   return {
+    photos,
     id: backendItem.id,
     titre: backendItem.title || 'Sans titre',
     chantier: backendItem.projectId,
