@@ -1,5 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
+import { Public } from '../auth/public.decorator';
 
+// Sonde d'infrastructure : interrogee par le healthcheck Docker et par la CI,
+// qui ne disposent d'aucun jeton.
+@Public()
 @Controller('health')
 export class HealthController {
   @Get()
