@@ -48,3 +48,5 @@ apps/mobile-flutter/.metadata
 # Rapports d'audit et plan interne (non versionnés)
 AUDIT.md
 PLAN.md
+# Cache incrémental TypeScript
+*.tsbuildinfo

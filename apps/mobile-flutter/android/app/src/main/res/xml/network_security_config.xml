@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Depuis Android 9 (API 28) le trafic HTTP en clair est refusé par défaut.
+  L'application ne pouvait donc joindre l'API de développement sur aucun
+  émulateur récent, indépendamment de toute question d'authentification.
+
+  L'exception est volontairement limitée aux adresses de développement.
+  Un `usesCleartextTraffic="true"` global aurait autorisé le HTTP en clair
+  partout, y compris en production.
+
+  10.0.2.2 : alias de la machine hôte depuis l'émulateur Android.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
