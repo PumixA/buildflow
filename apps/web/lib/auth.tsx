@@ -94,7 +94,12 @@ export function useAuth(): AuthState {
 }
 
 export function getAuthHeaders(): Record<string, string> {
-  if (typeof window === 'undefined') return { 'x-role': 'RESPONSABLE_QSE' };
+  // Côté serveur il n'y a pas de session : le token vit dans le navigateur.
+  // On y envoyait `x-role`, un en-tête d'élévation de privilège que l'API
+  // n'accepte qu'en mode développement — d'où des 401 silencieux en production,
+  // rendus à l'écran comme une absence de données. Les pages qui ont besoin de
+  // données authentifiées sont désormais des composants client.
+  if (typeof window === 'undefined') return {};
   const token = localStorage.getItem('buildflow_token');
   if (token) return { Authorization: `Bearer ${token}` };
   if (process.env.NODE_ENV === 'development') return { 'x-role': 'RESPONSABLE_QSE' };
