@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Variante DEBUG uniquement.
+
+  Le fichier équivalent de `src/main` n'autorise le HTTP en clair que vers
+  10.0.2.2, localhost et 127.0.0.1 — suffisant pour l'émulateur, mais pas pour
+  un appareil réel, qui joint l'API de développement par l'adresse du poste sur
+  le réseau local (192.168.x.y, variable d'un poste et d'un réseau à l'autre).
+
+  Inscrire cette adresse dans `src/main` la figerait sur une seule machine.
+  Gradle donne la priorité au source set de la variante : ce fichier ne
+  s'applique donc qu'aux builds debug, jamais à une release, qui conserve
+  `cleartextTrafficPermitted="false"` par défaut.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

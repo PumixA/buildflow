@@ -94,9 +94,24 @@ docker compose down -v
 
 ## Sécurité
 
-- OIDC/MFA simulé via module auth.
-- RBAC via décorateur `@Roles` et guard global (`x-role` requis).
-- journal d'audit append-only hashé.
+- OIDC/MFA simulé via le module `auth`. `POST /auth/session` délivre un JWT signé (HS256)
+  après mot de passe **et** code MFA.
+- RBAC via le décorateur `@Roles` et le guard global `RolesGuard`.
+  L'authentification se fait par en-tête `Authorization: Bearer <token>`.
+- L'en-tête `x-role` est un **raccourci de développement uniquement** : il n'est accepté
+  que si `NODE_ENV=development`. Les conteneurs tournant en `production`, une requête
+  portant seulement `x-role` y reçoit `401`.
+- Journal d'audit append-only, chaîné par hachage SHA-256.
+
+Limites connues, documentées pour ne pas les laisser croire résolues :
+
+- Le guard est **fail-open** : une route sans `@Roles` est publique. C'est aujourd'hui le
+  cas de `GET /reporting/kpi`, accessible sans aucun en-tête.
+- Les comptes de démonstration sont codés en dur, mots de passe en clair et code MFA fixe.
+  La colonne `users.hashed_password` existe mais n'est pas encore utilisée par
+  l'authentification.
+- La chaîne d'audit n'est pas scellée par clé : elle détecte une corruption accidentelle,
+  pas une falsification volontaire.
 
 ## CI/CD
 

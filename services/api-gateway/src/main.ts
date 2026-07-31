@@ -16,10 +16,20 @@ if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
 }
 /* eslint-enable @typescript-eslint/no-var-requires */
 
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { resolveJwtSecret } from '../../../src/auth/auth.service';
 import { AppModule } from './modules/app.module';
+
+// Filet de sécurité : depuis Node 15, un rejet de promesse non géré termine le process.
+// Les opérations secondaires (persistance, publication d'événements) sont lancées sans await
+// et ne doivent jamais pouvoir provoquer une interruption de service.
+const processLogger = new Logger('Process');
+
+process.on('unhandledRejection', (reason) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  processLogger.error(`Rejet de promesse non géré : ${err.message}`, err.stack);
+});
 
 async function bootstrap(): Promise<void> {
   // Fail-fast : mieux vaut refuser de démarrer que de servir des jetons signés

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import { AuthProvider } from '../lib/auth';
+import { WorksiteProvider } from '../lib/worksite';
 import './styles.css';
 
 const manrope = Manrope({
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body className={manrope.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <WorksiteProvider>{children}</WorksiteProvider>
+        </AuthProvider>
       </body>
     </html>
   );

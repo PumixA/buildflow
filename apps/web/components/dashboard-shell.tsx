@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
+import { useWorksite } from '../lib/worksite';
 
 type DashboardShellProps = {
   title: string;
@@ -12,6 +13,7 @@ type DashboardShellProps = {
 
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, logout } = useAuth();
+  const { worksite } = useWorksite();
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
@@ -31,9 +33,10 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         </div>
         <div className="menu-group">
           <p className="menu-title">WEB (ADMINISTRATION)</p>
+          <Link href="/chantiers" className="menu-link">Chantiers</Link>
           <Link href="/hse" className="menu-link">Tableau de Bord HSE</Link>
           <Link href="/ncr" className="menu-link">Liste des NCR</Link>
-          <Link href="/ncr/NCR-2024-0155" className="menu-link">Fiche Détail NCR</Link>
+          <Link href="/ncr/nouveau" className="menu-link">Nouvelle NCR</Link>
         </div>
         <div className="menu-group">
           <p className="menu-title">MOBILE (TERRAIN)</p>
@@ -45,7 +48,16 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         <header className="topbar">
           <h1>{title}</h1>
           <div className="topbar-right">
-            <p>Chantier actif: <strong>Paris - La Défense T4</strong></p>
+            {/* Le chantier actif était écrit en dur : l'écran annonçait « Paris -
+                La Défense T4 » quel que soit le contenu réel de la base. */}
+            <p>
+              Chantier actif:{' '}
+              {worksite ? (
+                <Link href="/chantiers" className="action-link"><strong>{worksite.name}</strong></Link>
+              ) : (
+                <Link href="/chantiers" className="action-link">aucun — en ouvrir un</Link>
+              )}
+            </p>
             {email && <span className="user-email">{email}</span>}
             {ready && <button onClick={logout} className="btn-logout">Déconnexion</button>}
           </div>
