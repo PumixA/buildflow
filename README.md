@@ -21,7 +21,19 @@ docker compose -f docker-compose.yml -f docker-compose.local-dev.yml up --watch
 
 ## Démarrage Docker complet
 
-Un seul lancement démarre l’API, le back-office web, PostgreSQL, RabbitMQ et MinIO :
+**Prérequis — une seule fois par poste.** L’API refuse de démarrer sans secret de
+signature des jetons, et `docker-compose.yml` n’en fournit volontairement aucun par
+défaut : une valeur écrite dans un fichier versionné serait publique, donc équivalente
+à pas de secret. Générer le sien dans `.env` (non versionné) :
+
+```bash
+echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+```
+
+Sans cette variable, `docker compose up` s’arrête immédiatement avec le message
+indiquant la commande ci-dessus.
+
+Un seul lancement démarre ensuite l’API, le back-office web, PostgreSQL, RabbitMQ et MinIO :
 
 ```bash
 docker compose up --build
@@ -133,6 +145,10 @@ Workflows:
 
 ## Variables d'environnement clés
 
+- `JWT_SECRET` — **obligatoire** hors `NODE_ENV=development|test`. Signature des jetons
+  de session. Le démarrage échoue si la variable est absente, reprend la valeur de
+  développement publiée dans le dépôt, ou fait moins de 32 caractères.
+  Générer : `openssl rand -hex 32`
 - `DATABASE_URL`
 - `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_JWKS_URI`, `OIDC_REQUIRE_MFA`
 - `S3_REGION`, `S3_WORM_BUCKET`
