@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { NcrStatus } from '../../../../../libs/domain/src/models';
 import { ManagedNcr } from '../../../../../src/ncr/ncr.service';
 import { NcrPhoto } from './ncr.service';
@@ -55,6 +56,22 @@ export class NcrController {
   @Roles('CHEF_CHANTIER', 'RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
   listPhotos(@Param('ncrId') ncrId: string): ReturnType<NcrService['listPhotos']> {
     return this.ncrService.listPhotos(ncrId);
+  }
+
+  // Le contenu transite par l'API : une URL `s3://` n'est pas récupérable par
+  // un navigateur, et exposer MinIO directement contournerait le contrôle de
+  // rôles. `Cache-Control: private` évite qu'un cache partagé conserve une
+  // preuve de chantier.
+  @Get(':ncrId/photos/:photoId/contenu')
+  @Roles('CHEF_CHANTIER', 'RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
+  @Header('Cache-Control', 'private, max-age=300')
+  async photoContent(
+    @Param('ncrId') ncrId: string,
+    @Param('photoId') photoId: string,
+    @Res() res: Response
+  ): Promise<void> {
+    const { body, contentType } = await this.ncrService.readPhoto(ncrId, photoId);
+    res.type(contentType).send(body);
   }
 
   @Post(':ncrId/photo')

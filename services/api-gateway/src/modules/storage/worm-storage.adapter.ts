@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createHash, randomUUID } from 'crypto';
 
 type EvidenceObject = {
@@ -76,6 +76,37 @@ export class WormStorageAdapter {
     // mémoire ferait croître le process sans limite. Seules les métadonnées restent.
     this.storage.set(id, stored);
     return stored;
+  }
+
+  /**
+   * Relit le contenu d'un objet scellé.
+   *
+   * L'interface ne peut pas récupérer une URL `s3://` : le contenu transite par
+   * l'API, qui reste ainsi le seul point d'authentification. Exposer MinIO
+   * directement, ou distribuer des URL signées, ouvrirait un accès contournant
+   * le contrôle de rôles.
+   */
+  async readEvidence(url: string): Promise<{ body: Buffer; contentType: string } | null> {
+    if (!this.s3Client || !this.bucket) {
+      return null;
+    }
+
+    const prefixe = `s3://${this.bucket}/`;
+    if (!url.startsWith(prefixe)) {
+      return null;
+    }
+
+    const objet = await this.s3Client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: url.slice(prefixe.length) })
+    );
+    if (!objet.Body) {
+      return null;
+    }
+
+    return {
+      body: Buffer.from(await objet.Body.transformToByteArray()),
+      contentType: objet.ContentType ?? 'application/octet-stream'
+    };
   }
 
   getEvidence(id: string): EvidenceObject | undefined {
