@@ -9,6 +9,7 @@ export type NcrItem = {
   latitude: number;
   longitude: number;
   dateSignalement: string;
+  photos?: PhotoPreuve[];
 };
 
 export type Worksite = {
@@ -34,6 +35,14 @@ export type HseActivity = {
   chantier: string;
   statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';
   ilYA: string;
+};
+
+export type PhotoPreuve = {
+  id: string;
+  scellee: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  date: string;
 };
 
 export type ActionEnRetard = {
