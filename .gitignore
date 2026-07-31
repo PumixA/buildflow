@@ -45,5 +45,8 @@ apps/mobile-flutter/.metadata
 # Docker (si vous utilisez des volumes locaux)
 .docker/
 
+# Rapports d'audit et plan interne (non versionnés)
+AUDIT.md
+PLAN.md
 # Cache incrémental TypeScript
 *.tsbuildinfo
