@@ -1,8 +1,12 @@
+import { Public } from './public.decorator';
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { CreateSessionDto, ValidateTokenDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 
+// Point d'entree de l'authentification : par construction accessible sans
+// jeton, puisque c'est lui qui en delivre un.
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
