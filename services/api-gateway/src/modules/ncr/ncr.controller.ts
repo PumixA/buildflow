@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { NcrStatus } from '../../../../../libs/domain/src/models';
 import { ManagedNcr } from '../../../../../src/ncr/ncr.service';
+import { NcrPhoto } from './ncr.service';
 import { Roles } from '../auth/roles.decorator';
 import {
   AddClosureProofDto,
+  AddNcrPhotoDto,
   AssignNcrTaskDto,
   CloseNcrDto,
   CreateNcrDto,
@@ -39,8 +42,45 @@ export class NcrController {
 
   @Get(':ncrId')
   @Roles('RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
-  detail(@Param('ncrId') ncrId: string): ReturnType<NcrService['detail']> {
-    return this.ncrService.detail(ncrId);
+  async detail(@Param('ncrId') ncrId: string): Promise<ManagedNcr & { photoDetails: NcrPhoto[] }> {
+    // Les photos vivent dans leur propre table : on les joint à la fiche plutôt
+    // que d'imposer un second appel à l'interface.
+    const [ncr, photos] = await Promise.all([
+      this.ncrService.detail(ncrId),
+      this.ncrService.listPhotos(ncrId)
+    ]);
+    return { ...ncr, photos: photos.map((photo) => photo.url), photoDetails: photos };
+  }
+
+  @Get(':ncrId/photos')
+  @Roles('CHEF_CHANTIER', 'RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
+  listPhotos(@Param('ncrId') ncrId: string): ReturnType<NcrService['listPhotos']> {
+    return this.ncrService.listPhotos(ncrId);
+  }
+
+  // Le contenu transite par l'API : une URL `s3://` n'est pas récupérable par
+  // un navigateur, et exposer MinIO directement contournerait le contrôle de
+  // rôles. `Cache-Control: private` évite qu'un cache partagé conserve une
+  // preuve de chantier.
+  @Get(':ncrId/photos/:photoId/contenu')
+  @Roles('CHEF_CHANTIER', 'RESPONSABLE_QSE', 'DIRECTION_TRAVAUX', 'ADMIN')
+  @Header('Cache-Control', 'private, max-age=300')
+  async photoContent(
+    @Param('ncrId') ncrId: string,
+    @Param('photoId') photoId: string,
+    @Res() res: Response
+  ): Promise<void> {
+    const { body, contentType } = await this.ncrService.readPhoto(ncrId, photoId);
+    res.type(contentType).send(body);
+  }
+
+  @Post(':ncrId/photo')
+  @Roles('CHEF_CHANTIER', 'RESPONSABLE_QSE', 'ADMIN')
+  addPhoto(
+    @Param('ncrId') ncrId: string,
+    @Body() payload: AddNcrPhotoDto
+  ): ReturnType<NcrService['addPhoto']> {
+    return this.ncrService.addPhoto(ncrId, payload);
   }
 
   @Post()
