@@ -98,7 +98,6 @@ export default function NcrDetailPage({ params }: Props) {
                       <PhotoPreuve key={photo.id} ncrId={detail.id} photo={photo} />
                     )
                   ))}
-                  ))}
                 </div>
                 <p className="worm-note">
                   {photos.every((photo) => photo.scellee)

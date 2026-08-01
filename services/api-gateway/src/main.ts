@@ -45,6 +45,7 @@ async function bootstrap(): Promise<void> {
   });
 
   // Augmenter la limite pour les photos encodées en base64
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { urlencoded, json } = require('express');
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ limit: '10mb', extended: true }));
