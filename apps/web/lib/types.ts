@@ -22,11 +22,14 @@ export type Worksite = {
   dateOuverture: string;
 };
 
+// `null` = non mesuré, distinct de 0. L'interface affiche un tiret plutôt
+// qu'un chiffre inventé.
 export type HseKpi = {
-  crashFreeMobile: number;
-  uptime: number;
-  delaiClotureNcrJours: number;
-  ncrOuvertes: number;
+  crashFreeMobile: number | null;
+  uptime: number | null;
+  delaiClotureNcrJours: number | null;
+  ncrOuvertes: number | null;
+  tauxSynchronisation: number | null;
 };
 
 export type HseActivity = {

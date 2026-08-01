@@ -52,9 +52,10 @@ export const mockNcrList: NcrItem[] = [
 ];
 
 export const mockHseKpi: HseKpi = {
-  crashFreeMobile: 99.7,
-  uptime: 99.95,
+  crashFreeMobile: null,
+  uptime: null,
   delaiClotureNcrJours: 4.2,
+  tauxSynchronisation: 99.4,
   ncrOuvertes: 23
 };
 

@@ -33,6 +33,19 @@ function hasWormProof(item: BackendNcr): boolean {
   return (item.closureProofs?.length ?? 0) > 0;
 }
 
+type BackendKpi = {
+  cibles: { uptime: number; crashFree: number; syncSuccess: number; apiP95Ms: number };
+  mesures: {
+    ncrOuvertes: number | null;
+    ncrTotal: number | null;
+    delaiClotureJours: number | null;
+    tauxSynchronisation: number | null;
+    syncTotal: number | null;
+    uptime: null;
+    crashFreeMobile: null;
+  };
+};
+
 type BackendHseDashboard = {
   totalOpen: number;
   criticalOpen: number;
@@ -279,18 +292,28 @@ export async function fetchHseDashboard(): Promise<{
   const backend = await safeJson<BackendHseDashboard>('/hse/dashboard');
   if (!backend) {
     return {
-      kpi: { crashFreeMobile: 0, uptime: 0, delaiClotureNcrJours: 0, ncrOuvertes: 0 },
+      kpi: {
+        crashFreeMobile: null,
+        uptime: null,
+        delaiClotureNcrJours: null,
+        tauxSynchronisation: null,
+        ncrOuvertes: null
+      },
       activity: [],
       actionsEnRetard: []
     };
   }
 
+  // `/reporting/kpi` distingue désormais cibles et mesures. Les valeurs non
+  // mesurables y sont nulles : on les propage telles quelles pour que l'écran
+  // affiche un tiret, au lieu des 99.7 / 99.95 / 4.2 qui y étaient codés en dur.
+  const mesures = (await safeJson<BackendKpi>('/reporting/kpi'))?.mesures;
+
   const kpi: HseKpi = {
-    // TODO(2.3) : ces trois valeurs restent codées en dur. `/reporting/kpi`
-    // renvoie des cibles, pas des mesures — il n'y a pas encore de source réelle.
-    crashFreeMobile: 99.7,
-    uptime: 99.95,
-    delaiClotureNcrJours: 4.2,
+    crashFreeMobile: mesures?.crashFreeMobile ?? null,
+    uptime: mesures?.uptime ?? null,
+    delaiClotureNcrJours: mesures?.delaiClotureJours ?? null,
+    tauxSynchronisation: mesures?.tauxSynchronisation ?? null,
     // Compté en base depuis la table `ncr` (auparavant : incidents en mémoire,
     // d'où le « 0 » affiché alors que la liste montrait 25 NCR).
     ncrOuvertes: backend.totalOpen
