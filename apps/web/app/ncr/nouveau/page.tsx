@@ -228,16 +228,9 @@ export default function NouvelleNcrPage() {
           <label className="field-wide">
             Photo du constat
             <input type="file" accept="image/*" onChange={choisirPhoto} required />
-            {/*
-              Seul le nom du fichier est transmis, comme le fait aujourd'hui
-              l'application mobile : aucun endpoint de téléversement n'existe
-              encore côté API. Le dire à l'écran plutôt que de laisser croire
-              que l'image est archivée.
-            */}
             <span className="field-hint">
-              {photo ? `Fichier: ${photo}. ` : ''}
-              Seule la référence du fichier est enregistrée — le téléversement de
-              l&apos;image n&apos;est pas encore disponible.
+              {photo ? '✅ Photo chargée (encodage base64). ' : ''}
+              La photo est transmise avec la NCR et sera visible dans la fiche détail.
             </span>
           </label>
 
