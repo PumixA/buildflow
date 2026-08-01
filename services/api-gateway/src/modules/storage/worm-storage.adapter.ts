@@ -108,8 +108,4 @@ export class WormStorageAdapter {
       contentType: objet.ContentType ?? 'application/octet-stream'
     };
   }
-
-  getEvidence(id: string): EvidenceObject | undefined {
-    return this.storage.get(id);
-  }
 }

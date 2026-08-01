@@ -50,13 +50,6 @@ export class OidcVerifierService {
     }
   }
 
-  isMfaCompliant(identity: VerifiedIdentity): boolean {
-    if (!this.requireMfa) {
-      return true;
-    }
-    return identity.mfaValidated;
-  }
-
   private extractRoles(payload: JWTPayload): Role[] {
     const fromRolesClaim = Array.isArray(payload['roles']) ? payload['roles'] : [];
     const realmAccess = payload['realm_access'] as { roles?: unknown[] } | undefined;

@@ -350,28 +350,15 @@ export class HseService {
 
   private async ensureUser(userCode: string): Promise<string> {
     const fromMemory = this.userToDbId.get(userCode);
-    if (fromMemory) {
-      return fromMemory;
-    }
+    if (fromMemory) return fromMemory;
 
-    const pseudoEmail = `${userCode.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}@buildflow.local`;
-    const found = await this.databaseService.query(
-      'SELECT id FROM users WHERE email = $1 LIMIT 1',
-      [pseudoEmail]
-    );
-    if (found.rowCount && found.rows[0]) {
-      const row = found.rows[0] as { id: string };
-      this.userToDbId.set(userCode, row.id);
-      return row.id;
-    }
-
+    const email = userCode.includes('@') ? userCode : `${userCode}@buildflow.io`;
     const userId = randomUUID();
     await this.databaseService.query(
-      `
-      INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6,NOW())
-      `,
-      [userId, userCode, pseudoEmail, 'RESPONSABLE_QSE', 'hash-placeholder', true]
+      `INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
+       VALUES ($1,$2,$3,'RESPONSABLE_QSE','hash-placeholder',TRUE,NOW())
+       ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+      [userId, userCode, email]
     );
     this.userToDbId.set(userCode, userId);
     return userId;
