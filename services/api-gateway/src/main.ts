@@ -41,9 +41,13 @@ async function bootstrap(): Promise<void> {
       origin: ['http://localhost:3001', 'http://127.0.0.1:3001'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       credentials: true
-    },
-    bodyParser: { json: { limit: '10mb' } }
+    }
   });
+
+  // Augmenter la limite pour les photos encodées en base64
+  const { urlencoded, json } = require('express');
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ limit: '10mb', extended: true }));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
