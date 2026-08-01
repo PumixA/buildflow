@@ -1,18 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { Role } from '../../libs/domain/src/models';
 
-type SessionInput = {
-  email: string;
-  password: string;
-  mfaCode?: string;
-};
-
-type UserRecord = {
-  email: string;
-  password: string;
-  role: Role;
-  mfaRequired: boolean;
-};
 
 /**
  * Valeur sur laquelle le code retombait jusqu'ici quand JWT_SECRET était absent.
@@ -78,12 +66,6 @@ export function resolveJwtSecret(): Uint8Array {
 }
 
 export class AuthService {
-  private readonly users: UserRecord[] = [
-    { email: 'chef@buildflow.io', password: 'password', role: 'CHEF_CHANTIER', mfaRequired: true },
-    { email: 'qse@buildflow.io', password: 'password', role: 'RESPONSABLE_QSE', mfaRequired: true },
-    { email: 'direction@buildflow.io', password: 'password', role: 'DIRECTION_TRAVAUX', mfaRequired: true },
-    { email: 'admin@buildflow.io', password: 'password', role: 'ADMIN', mfaRequired: true }
-  ];
 
   getConfig(): {
     provider: string;
@@ -103,25 +85,30 @@ export class AuthService {
     };
   }
 
-  async createSession(input: SessionInput): Promise<{
+  /**
+   * Émet un jeton de session pour une identité **déjà vérifiée**.
+   *
+   * Cette méthode ne connaît plus aucun compte : elle remplace un
+   * `createSession` qui portait quatre utilisateurs dans un tableau en mémoire
+   * et comparait les mots de passe en clair. La vérification des identifiants
+   * appartient désormais à la couche qui a accès à la base — ce module ne
+   * s'occupe que de la signature.
+   */
+  async issueToken(identity: {
+    email: string;
+    role: Role;
+    mfaValidated: boolean;
+  }): Promise<{
     accessToken: string;
     role: Role;
     mfaValidated: boolean;
   }> {
-    const user = this.users.find((candidate) => candidate.email === input.email);
-    if (!user || user.password !== input.password) {
-      throw new Error('Identifiants invalides');
-    }
-    if (user.mfaRequired && input.mfaCode !== '123456') {
-      throw new Error('MFA_REQUIRED: Code MFA invalide');
-    }
-
     const accessToken = await new SignJWT({
-      roles: [user.role],
-      amr: user.mfaRequired ? ['pwd', 'mfa'] : ['pwd']
+      roles: [identity.role],
+      amr: identity.mfaValidated ? ['pwd', 'mfa'] : ['pwd']
     })
       .setProtectedHeader({ alg: 'HS256' })
-      .setSubject(user.email)
+      .setSubject(identity.email)
       .setIssuer(JWT_ISSUER)
       .setAudience(JWT_AUDIENCE)
       .setIssuedAt()
@@ -130,8 +117,8 @@ export class AuthService {
 
     return {
       accessToken,
-      role: user.role,
-      mfaValidated: true
+      role: identity.role,
+      mfaValidated: identity.mfaValidated
     };
   }
 

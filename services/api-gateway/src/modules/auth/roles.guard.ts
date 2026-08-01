@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Role } from '../../../../../libs/domain/src/models';
 import { AuthService } from './auth.service';
+import { PUBLIC_KEY } from './public.decorator';
 import { ROLES_KEY } from './roles.decorator';
 
 @Injectable()
@@ -17,15 +18,29 @@ export class RolesGuard implements CanActivate {
     private readonly authService: AuthService
   ) {}
 
+  /**
+   * Guard **fail-closed** : toute route exige une authentification, sauf celles
+   * marquées `@Public()`.
+   *
+   * Le comportement précédent était l'inverse — une route dépourvue de `@Roles`
+   * était servie sans contrôle. Ce n'est pas un oubli isolé mais une classe
+   * entière d'oublis : ajouter un endpoint sans y penser suffisait à l'exposer.
+   * C'est ainsi que `GET /reporting/kpi` répondait 200 sans en-tête (audit, H3).
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
       context.getHandler(),
       context.getClass()
     ]);
 
-    if (!requiredRoles || requiredRoles.length === 0) {
+    if (isPublic) {
       return true;
     }
+
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass()
+    ]);
 
     const request = context.switchToHttp().getRequest<{
       headers: { authorization?: string; 'x-role'?: string };
@@ -38,8 +53,13 @@ export class RolesGuard implements CanActivate {
       if (!result.valid) {
         throw new UnauthorizedException('Token invalide');
       }
-      if (!result.mfaValidated && requiredRoles.length > 0) {
+      if (!result.mfaValidated) {
         throw new ForbiddenException('MFA requis');
+      }
+      // Sans `@Roles`, la route est réservée aux porteurs d'un jeton valide,
+      // quel que soit leur rôle : authentifié suffit, mais est exigé.
+      if (!requiredRoles || requiredRoles.length === 0) {
+        return true;
       }
       if (result.roles.some((role) => requiredRoles.includes(role as Role))) {
         return true;
@@ -50,8 +70,9 @@ export class RolesGuard implements CanActivate {
     if (process.env.NODE_ENV === 'development') {
       const role = request.headers['x-role'];
       if (role) {
-        console.warn(`[DEV] x-role bypass used: ${role} for endpoint requiring ${requiredRoles.join(', ')}`);
-        if (!requiredRoles.includes(role as Role)) {
+        const attendus = requiredRoles?.length ? requiredRoles.join(', ') : 'un jeton valide';
+        console.warn(`[DEV] x-role bypass used: ${role} for endpoint requiring ${attendus}`);
+        if (requiredRoles?.length && !requiredRoles.includes(role as Role)) {
           throw new ForbiddenException('Rôle insuffisant');
         }
         return true;

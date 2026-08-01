@@ -240,6 +240,24 @@ a {
   border-color: rgba(214, 45, 45, 0.4);
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 0 4px;
+}
+
+.pagination .filter-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pagination-state {
+  color: #8ea5c5;
+  font-size: 13px;
+}
+
 .priority-basse {
   color: #8fd9ad;
 }
@@ -830,4 +848,29 @@ a {
 .topbar-right .btn-logout:hover {
   border-color: #dc2626;
   color: #fca5a5;
+}
+
+/* Vignette de preuve : la carte contenait un simple libellé de fichier fictif. */
+.proof-photo {
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border-style: solid;
+}
+
+.proof-photo img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+
+.proof-photo figcaption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--text-soft);
 }
