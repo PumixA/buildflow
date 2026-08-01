@@ -1,4 +1,4 @@
-# BuildFlow - Livrables Alignés (Phases 1 à 13)
+# BuildFlow
 
 Plateforme BuildFlow orientée Qualité (NCR), Sécurité (HSE), offline-first et traçabilité.
 
@@ -73,7 +73,8 @@ docker compose down -v
 - `infra/database` : schéma PostgreSQL et migrations.
 - `apps/web` : écrans back-office Next.js (liste NCR, détail, dashboard HSE).
 - `apps/mobile-flutter` : écrans Flutter (création NCR + synchronisation).
-- `docs/phase-*.md` : livrables détaillés par phase.
+- `docs/` : documentation technique — architecture, modèle de données, sécurité,
+  tests, exploitation, et traçabilité des livrables.
 
 ## Endpoints principaux
 
@@ -94,33 +95,41 @@ docker compose down -v
 
 ## Sécurité
 
-- OIDC/MFA simulé via le module `auth`. `POST /auth/session` délivre un JWT signé (HS256)
-  après mot de passe **et** code MFA.
-- RBAC via le décorateur `@Roles` et le guard global `RolesGuard`.
-  L'authentification se fait par en-tête `Authorization: Bearer <token>`.
-- L'en-tête `x-role` est un **raccourci de développement uniquement** : il n'est accepté
-  que si `NODE_ENV=development`. Les conteneurs tournant en `production`, une requête
-  portant seulement `x-role` y reçoit `401`.
+- Comptes **en base**, mots de passe hachés en **argon2id**. `POST /auth/session` délivre
+  un JWT HS256 après mot de passe **et** code MFA.
+- `JWT_SECRET` obligatoire hors développement : l'API refuse de démarrer sans lui, et
+  rejette la valeur de développement publiée dans le dépôt.
+- Limitation de débit sur `/auth/session` : 10 tentatives par minute et par IP.
+- RBAC **fail-closed** : toute route exige une authentification, sauf celles marquées
+  `@Public()` — `/health` et `/auth/*`. Un test fige cette liste.
+- L'en-tête `x-role` est un raccourci de développement : il n'est accepté que si
+  `NODE_ENV=development`. Les conteneurs tournant en `production`, une requête ne
+  portant que cet en-tête reçoit `401`.
+- Photos de constat scellées en **Object Lock COMPLIANCE**, rétention 365 jours.
 - Journal d'audit append-only, chaîné par hachage SHA-256.
 
 Limites connues, documentées pour ne pas les laisser croire résolues :
 
-- Le guard est **fail-open** : une route sans `@Roles` est publique. C'est aujourd'hui le
-  cas de `GET /reporting/kpi`, accessible sans aucun en-tête.
-- Les comptes de démonstration sont codés en dur, mots de passe en clair et code MFA fixe.
-  La colonne `users.hashed_password` existe mais n'est pas encore utilisée par
-  l'authentification.
-- La chaîne d'audit n'est pas scellée par clé : elle détecte une corruption accidentelle,
-  pas une falsification volontaire.
+- Le code MFA est **constant** : il ne dépend ni du temps, ni d'un secret par
+  utilisateur. Le passage à un TOTP réel reste à faire.
+- La chaîne d'audit n'est **pas scellée par clé** : elle détecte une corruption
+  accidentelle, pas une falsification volontaire. Le fichier n'est par ailleurs monté
+  sur aucun volume, donc détruit à chaque reconstruction d'image.
+- La base locale du mobile (SQLite) **n'est pas chiffrée**.
+- Aucun fournisseur OIDC n'est déployé : les jetons sont émis localement.
+
+Le détail, chiffré et séquencé, figure dans `docs/securite.md` et
+`docs/conformite-livrables.md`.
 
 ## CI/CD
 
 Workflows:
 
 - `.github/workflows/ci.yml`:
-  - checks de fiabilité backend (`lint`, `tests`, `build`),
+  - contrôles backend (`lint`, tests avec seuils de couverture, `build`, `npm audit`),
   - build web,
-  - analyse et tests Flutter.
+  - analyse et tests Flutter,
+  - `smoke-docker` : **démarre réellement la stack** et vérifie qu'elle répond.
 - `.github/workflows/pr-policy.yml`:
   - PR vers `dev` autorisées uniquement depuis `feat/*`, `fix/*`, `chore/*`, `refactor/*`, `hotfix/*`,
   - PR vers `main` autorisées uniquement depuis `release/vX.Y.Z`.
@@ -137,11 +146,13 @@ Workflows:
 
 ## Guide d'exploitation et Git
 
-- Voir `docs/exploitation-et-flux-git.md` pour:
-  - démarrage complet API/Web/Mobile,
-  - création/usage de l'émulateur Android,
+- Voir `docs/exploitation.md` pour :
+  - démarrage complet API / Web / Mobile,
+  - usage de l'émulateur Android et des appareils réels,
   - tests qualité,
-  - flux Git recommandé et commandes de vérification.
+  - flux Git recommandé et résolution des branches empilées.
+- Voir `docs/conformite-livrables.md` pour la traçabilité entre les engagements du
+  cadrage, les critères d'acceptation et l'état réellement livré.
 
 ## Variables d'environnement clés
 

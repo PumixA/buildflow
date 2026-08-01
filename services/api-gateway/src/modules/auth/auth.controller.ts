@@ -29,3 +29,6 @@ export class AuthController {
     return this.authService.validateBearerToken(payload.token);
   }
 }
+
+
+
