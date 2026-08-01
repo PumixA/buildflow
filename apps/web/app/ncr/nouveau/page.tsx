@@ -31,7 +31,7 @@ function parseGps(localisation: string | null): { lat: string; lng: string } | n
 
 export default function NouvelleNcrPage() {
   const router = useRouter();
-  const { email } = useAuth();
+  const { email, role } = useAuth();
   const { worksite, ready, openWorksite } = useWorksite();
 
   const [chantiers, setChantiers] = useState<Worksite[]>([]);
@@ -79,7 +79,13 @@ export default function NouvelleNcrPage() {
   };
 
   const choisirPhoto = (event: ChangeEvent<HTMLInputElement>) => {
-    setPhoto(event.target.files?.[0]?.name ?? '');
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') setPhoto(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const soumettre = async (event: FormEvent) => {
@@ -112,7 +118,12 @@ export default function NouvelleNcrPage() {
         openWorksite({ id: chantier.id, name: chantier.nom });
       }
 
-      router.push(`/ncr/${cree.id}`);
+      // Le chef de chantier n'a pas accès à la liste : le renvoyer vers l'accueil
+      if (role === 'CHEF_CHANTIER') {
+        router.push('/');
+      } else {
+        router.push(`/ncr/${cree.id}`);
+      }
     } catch (err) {
       setErreur((err as Error).message);
       setEnvoi(false);
@@ -222,16 +233,9 @@ export default function NouvelleNcrPage() {
           <label className="field-wide">
             Photo du constat
             <input type="file" accept="image/*" onChange={choisirPhoto} required />
-            {/*
-              Seul le nom du fichier est transmis, comme le fait aujourd'hui
-              l'application mobile : aucun endpoint de téléversement n'existe
-              encore côté API. Le dire à l'écran plutôt que de laisser croire
-              que l'image est archivée.
-            */}
             <span className="field-hint">
-              {photo ? `Fichier: ${photo}. ` : ''}
-              Seule la référence du fichier est enregistrée — le téléversement de
-              l&apos;image n&apos;est pas encore disponible.
+              {photo ? '✅ Photo chargée (encodage base64). ' : ''}
+              La photo est transmise avec la NCR et sera visible dans la fiche détail.
             </span>
           </label>
 
@@ -239,7 +243,7 @@ export default function NouvelleNcrPage() {
             <button type="submit" className="filter-button" disabled={envoi || !complet}>
               {envoi ? 'Enregistrement...' : 'Déclarer la NCR'}
             </button>
-            <span className="field-hint">Auteur: {email ?? 'non identifié'}</span>
+            <span className="field-hint" suppressHydrationWarning>Auteur: {email ?? 'non identifié'}</span>
           </div>
         </form>
       </section>

@@ -17,7 +17,7 @@ describe('NcrController', () => {
     const mockService = {
       list: () => Promise.resolve([mockNcr]),
       detail: () => mockNcr,
-      create: (input: Record<string, unknown>) => ({ ...mockNcr, ...input }),
+      create: (input: Record<string, unknown>) => Promise.resolve({ ...mockNcr, ...input }),
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       update: (id: string, partial: Record<string, unknown>) => ({ ...mockNcr, ...partial }),
       setStatus: () => mockNcr,
@@ -40,8 +40,8 @@ describe('NcrController', () => {
     expect(result.total).toBe(1);
   });
 
-  it('should create an NCR', () => {
-    const result = controller.create({
+  it('should create an NCR', async () => {
+    const result = await controller.create({
       projectId: 'PROJ-1', creatorId: 'USR-1', title: 'New NCR',
       description: 'Desc', priority: 'HIGH', latitude: 48.8, longitude: 2.3, photos: []
     } as never);

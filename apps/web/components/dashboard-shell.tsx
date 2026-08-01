@@ -12,17 +12,21 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({ title, children }: DashboardShellProps) {
-  const { isAuthenticated, email, logout } = useAuth();
+  const { isAuthenticated, email, role, logout } = useAuth();
+  const canList = role === 'ADMIN' || role === 'RESPONSABLE_QSE' || role === 'DIRECTION_TRAVAUX';
   const { worksite } = useWorksite();
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setReady(true);
-    if (!isAuthenticated) {
+  }, []);
+
+  useEffect(() => {
+    if (ready && !isAuthenticated) {
       router.replace('/login');
     }
-  }, []);
+  }, [ready, isAuthenticated, router]);
 
   return (
     <main className="app-shell" suppressHydrationWarning>
@@ -34,8 +38,8 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         <div className="menu-group">
           <p className="menu-title">WEB (ADMINISTRATION)</p>
           <Link href="/chantiers" className="menu-link">Chantiers</Link>
-          <Link href="/hse" className="menu-link">Tableau de Bord HSE</Link>
-          <Link href="/ncr" className="menu-link">Liste des NCR</Link>
+          {canList && <Link href="/hse" className="menu-link">Tableau de Bord HSE</Link>}
+          {canList && <Link href="/ncr" className="menu-link">Liste des NCR</Link>}
           <Link href="/ncr/nouveau" className="menu-link">Nouvelle NCR</Link>
         </div>
         <div className="menu-group">
@@ -58,7 +62,7 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
                 <Link href="/chantiers" className="action-link">aucun — en ouvrir un</Link>
               )}
             </p>
-            {email && <span className="user-email">{email}</span>}
+            {ready && email && <span className="user-email">{email}</span>}
             {ready && <button onClick={logout} className="btn-logout">Déconnexion</button>}
           </div>
         </header>

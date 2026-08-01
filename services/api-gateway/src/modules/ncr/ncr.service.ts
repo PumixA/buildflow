@@ -52,7 +52,12 @@ const NCR_SELECT = `
   SELECT n.id, n.creator_id, n.title, n.description, n.status, n.priority,
          n.latitude, n.longitude, n.sync_status, n.local_id, n.version,
          n.created_at, n.updated_at,
-         COALESCE(p.name, n.project_id::text) AS project_name
+         COALESCE(p.name, n.project_id::text) AS project_name,
+         COALESCE(
+           (SELECT json_agg(json_build_object('s3_url', np.s3_url))
+            FROM ncr_photos np WHERE np.ncr_id = n.id),
+           '[]'::json
+         ) AS photos
   FROM ncr n
   LEFT JOIN projects p ON p.id = n.project_id
 `;
@@ -147,6 +152,9 @@ export class NcrService {
   }
 
   private toManagedNcr(row: Record<string, unknown>): ManagedNcr {
+    const photos = Array.isArray(row['photos'])
+      ? (row['photos'] as Array<Record<string,unknown>>).map((p) => p.s3_url ?? p.url ?? '').filter(Boolean)
+      : [];
     return {
       id: String(row['id']),
       projectId: String(row['project_name'] ?? ''),
@@ -157,7 +165,7 @@ export class NcrService {
       priority: String(row['priority'] ?? 'MEDIUM') as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
       latitude: Number(row['latitude'] ?? 0),
       longitude: Number(row['longitude'] ?? 0),
-      photos: [],
+      photos: photos as string[],
       sync_status: Boolean(row['sync_status']),
       localId: String(row['local_id'] ?? ''),
       version: Number(row['version'] ?? 1),
@@ -183,12 +191,31 @@ export class NcrService {
     return updated;
   }
 
-  create(input: CreateNcrInput): ManagedNcr {
+  async create(input: CreateNcrInput): Promise<ManagedNcr> {
     const created = this.domainService.createNCR(input);
-    this.fireAndForget(
-      this.persistToDatabase(created),
-      `Persistance de la NCR ${created.id} échouée`
-    );
+    // Await DB persistence so photos can reference the NCR row
+    await this.persistToDatabase(created).catch((err) => {
+      this.logger.error(`Persistance de la NCR ${created.id} échouée`, err);
+    });
+    // Store photos in ncr_photos table (base64 → S3 via worm storage)
+    if (input.photos?.length > 0) {
+      for (const [i, photo] of input.photos.entries()) {
+        if (photo.startsWith('data:')) {
+          const [meta, b64] = photo.split(',', 2);
+          const mime = meta.split(':')[1]?.split(';')[0] ?? 'image/png';
+          await this.addPhoto(created.id, {
+            actorId: input.creatorId,
+            fileName: `photo-${i + 1}.${mime.split('/')[1] ?? 'png'}`,
+            contentType: mime,
+            payloadBase64: b64,
+            latitude: input.latitude,
+            longitude: input.longitude
+          }).catch((err) => {
+            this.logger.error(`Persistance photo ${i + 1} de ${created.id} échouée`, err);
+          });
+        }
+      }
+    }
     this.fireAndForget(
       this.messagingService.publish({
         topic: 'ncr.created',

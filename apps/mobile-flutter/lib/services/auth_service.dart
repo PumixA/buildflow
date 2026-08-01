@@ -28,6 +28,8 @@ class AuthService {
     defaultValue: 'http://10.0.2.2:3000'
   );
 
+  String get apiBaseUrl => _apiBaseUrl;
+
   static const _tokenKey = 'buildflow_token';
   static const _roleKey = 'buildflow_role';
   static const _emailKey = 'buildflow_email';
