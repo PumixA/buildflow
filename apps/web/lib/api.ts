@@ -16,6 +16,7 @@ type BackendNcr = {
   longitude: number;
   createdAt?: string;
   closureProofs?: string[];
+  photos?: string[];
 };
 
 function formatDate(iso?: string): string {
