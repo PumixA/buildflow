@@ -45,6 +45,8 @@ Accès locaux :
 - API : http://localhost:3000/health
 - RabbitMQ Management : http://localhost:15672 (`guest` / `guest`)
 - MinIO Console : http://localhost:9001 (`buildflow` / `buildflow-secret`)
+- Nginx (TLS) : https://localhost/health (certificat auto-signé)
+- OpenTelemetry : métriques Prometheus http://localhost:9464/metrics
 
 Arrêt :
 
