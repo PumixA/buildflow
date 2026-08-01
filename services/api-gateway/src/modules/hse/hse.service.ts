@@ -60,17 +60,21 @@ export class HseService {
     private readonly messagingService: MessagingService
   ) {}
 
+  private fireAndForget(op: Promise<unknown>, ctx: string): void {
+    op.catch((err) => this.logger.error(`Opération secondaire HSE échouée: ${ctx}`, err));
+  }
+
   createIncident(input: CreateIncidentInput): ReturnType<DomainHseService['createIncident']> {
     const incident = this.domainService.createIncident(input);
-    void this.persistIncident(incident.id, input.projectId, input.creatorId, input.type, input.severity, input.description, incident.status);
-    void this.messagingService.publish({
+    this.fireAndForget(this.persistIncident(incident.id, input.projectId, input.creatorId, input.type, input.severity, input.description, incident.status), 'persistIncident');
+    this.fireAndForget(this.messagingService.publish({
       topic: 'hse.incident.created',
       timestamp: new Date().toISOString(),
       payload: {
         id: incident.id,
         severity: incident.severity
       }
-    });
+    }), 'publishIncident');
     this.auditService.append('hse.incident.created', input.creatorId, {
       incidentId: incident.id,
       severity: incident.severity
@@ -80,15 +84,15 @@ export class HseService {
 
   createAction(input: CreateActionInput): ReturnType<DomainHseService['createAction']> {
     const action = this.domainService.createAction(input);
-    void this.persistAction(input, action.id);
-    void this.messagingService.publish({
+    this.fireAndForget(this.persistAction(input, action.id), "persistAction");
+    this.fireAndForget(this.messagingService.publish({
       topic: 'hse.action.created',
       timestamp: new Date().toISOString(),
       payload: {
         id: action.id,
         incidentId: action.incidentId
       }
-    });
+    }), 'publishAction');
     this.auditService.append('hse.action.created', input.responsibleId, {
       actionId: action.id,
       incidentId: action.incidentId
@@ -98,14 +102,14 @@ export class HseService {
 
   confirmSiteSecured(incidentId: string): ReturnType<DomainHseService['confirmSiteSecured']> {
     const updated = this.domainService.confirmSiteSecured(incidentId);
-    void this.persistIncidentStatus(incidentId, updated.status);
+    this.fireAndForget(this.persistIncidentStatus(incidentId, updated.status), "persistIncidentStatus");
     this.auditService.append('hse.site.secured', 'SYSTEM', { incidentId });
     return updated;
   }
 
   resolveIncident(incidentId: string): ReturnType<DomainHseService['resolveIncident']> {
     const resolved = this.domainService.resolveIncident(incidentId);
-    void this.persistIncidentStatus(incidentId, resolved.status);
+    this.fireAndForget(this.persistIncidentStatus(incidentId, resolved.status), "persistIncidentStatus");
     this.auditService.append('hse.incident.resolved', 'SYSTEM', { incidentId });
     return resolved;
   }
@@ -319,6 +323,7 @@ export class HseService {
     });
   }
 
+  // TODO: extraire dans un IdResolver partagé (dupliqué dans NcrService)
   private async ensureProject(projectCode: string): Promise<string> {
     const fromMemory = this.projectToDbId.get(projectCode);
     if (fromMemory) {
@@ -346,28 +351,15 @@ export class HseService {
 
   private async ensureUser(userCode: string): Promise<string> {
     const fromMemory = this.userToDbId.get(userCode);
-    if (fromMemory) {
-      return fromMemory;
-    }
+    if (fromMemory) return fromMemory;
 
-    const pseudoEmail = `${userCode.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}@buildflow.local`;
-    const found = await this.databaseService.query(
-      'SELECT id FROM users WHERE email = $1 LIMIT 1',
-      [pseudoEmail]
-    );
-    if (found.rowCount && found.rows[0]) {
-      const row = found.rows[0] as { id: string };
-      this.userToDbId.set(userCode, row.id);
-      return row.id;
-    }
-
+    const email = userCode.includes('@') ? userCode : `${userCode}@buildflow.io`;
     const userId = randomUUID();
     await this.databaseService.query(
-      `
-      INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6,NOW())
-      `,
-      [userId, userCode, pseudoEmail, 'RESPONSABLE_QSE', 'hash-placeholder', true]
+      `INSERT INTO users (id, name, email, role, hashed_password, mfa_enabled, created_at)
+       VALUES ($1,$2,$3,'RESPONSABLE_QSE','hash-placeholder',TRUE,NOW())
+       ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+      [userId, userCode, email]
     );
     this.userToDbId.set(userCode, userId);
     return userId;

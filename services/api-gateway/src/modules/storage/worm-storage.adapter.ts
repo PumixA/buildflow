@@ -42,6 +42,7 @@ export class WormStorageAdapter {
     const hashSha256 = createHash('sha256').update(input.payloadBase64).digest('hex');
     const key = `${id}-${input.fileName}`;
     const configured = Boolean(this.s3Client && this.bucket);
+    if (!configured) console.warn('[WORM] S3 non configuré — les preuves ne sont PAS scellées.');
 
     if (this.s3Client && this.bucket) {
       await this.s3Client.send(
@@ -107,9 +108,5 @@ export class WormStorageAdapter {
       body: Buffer.from(await objet.Body.transformToByteArray()),
       contentType: objet.ContentType ?? 'application/octet-stream'
     };
-  }
-
-  getEvidence(id: string): EvidenceObject | undefined {
-    return this.storage.get(id);
   }
 }

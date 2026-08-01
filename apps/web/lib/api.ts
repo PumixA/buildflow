@@ -16,6 +16,7 @@ type BackendNcr = {
   longitude: number;
   createdAt?: string;
   closureProofs?: string[];
+  photos?: string[];
 };
 
 function formatDate(iso?: string): string {
@@ -30,7 +31,7 @@ function formatDate(iso?: string): string {
  * aucune preuve scellée — indéfendable sur un produit à finalité probatoire.
  */
 function hasWormProof(item: BackendNcr): boolean {
-  return (item.closureProofs?.length ?? 0) > 0;
+  return (item.photos?.length ?? 0) > 0 || (item.closureProofs?.length ?? 0) > 0;
 }
 
 type BackendKpi = {
@@ -69,12 +70,10 @@ type BackendHseDashboard = {
 };
 
 function toUiStatus(status: BackendNcr['status']): NcrItem['statut'] {
-  if (status === 'RESOLVED' || status === 'CLOSED') {
-    return 'RESOLU';
-  }
-  if (status === 'IN_ANALYSIS' || status === 'IN_PROGRESS') {
-    return 'EN_ANALYSE';
-  }
+  if (status === 'CLOSED') return 'CLOTURE';
+  if (status === 'RESOLVED') return 'RESOLU';
+  if (status === 'IN_PROGRESS') return 'EN_COURS';
+  if (status === 'IN_ANALYSIS') return 'EN_ANALYSE';
   return 'OUVERT';
 }
 

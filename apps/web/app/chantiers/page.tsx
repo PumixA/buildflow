@@ -25,7 +25,8 @@ export default function ChantiersPage() {
   const [envoi, setEnvoi] = useState(false);
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
 
-  const peutCreer = !!role && ROLES_OUVERTURE.includes(role);
+  // SSR : afficher par défaut, le client corrige après chargement du rôle
+  const peutCreer = !role || ROLES_OUVERTURE.includes(role);
 
   const ouvrir = useCallback(
     (id: string, nomChantier: string) => {

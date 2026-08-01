@@ -21,10 +21,10 @@
   l'accepte que si `NODE_ENV=development`. En `production`, une requête ne portant que
   cet en-tête reçoit `401`.
 
-Limite de conception connue : le guard est **fail-open**. Une route sans `@Roles` est
-servie sans authentification — c'est actuellement le cas de `GET /reporting/kpi`. Un
-guard fail-closed (authentification par défaut, `@Public()` explicite pour les
-exceptions) supprimerait cette classe d'oubli.
+**Corrigé (2026-07) :** le guard est désormais **fail-closed** — toute route sans
+`@Roles()` ou `@Public()` est refusée (401). `GET /reporting/kpi` est protégé par
+`@Roles`. Voir `services/api-gateway/src/modules/auth/roles.guard.ts` et
+le correctif dans le commit `8fb24d1`.
 
 ## Audit trail
 

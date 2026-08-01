@@ -3,7 +3,7 @@ export type NcrItem = {
   titre: string;
   chantier: string;
   description: string;
-  statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';
+  statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT' | 'CLOTURE' | 'EN_COURS';
   priorite: 'BASSE' | 'MOYENNE' | 'HAUTE' | 'CRITIQUE';
   worm: boolean;
   latitude: number;
@@ -36,7 +36,7 @@ export type HseActivity = {
   id: string;
   libelle: string;
   chantier: string;
-  statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT';
+  statut: 'RESOLU' | 'EN_ANALYSE' | 'OUVERT' | 'CLOTURE' | 'EN_COURS';
   ilYA: string;
 };
 

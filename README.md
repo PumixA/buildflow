@@ -45,6 +45,8 @@ Accès locaux :
 - API : http://localhost:3000/health
 - RabbitMQ Management : http://localhost:15672 (`guest` / `guest`)
 - MinIO Console : http://localhost:9001 (`buildflow` / `buildflow-secret`)
+- Nginx (TLS) : https://localhost/health (certificat auto-signé)
+- OpenTelemetry : métriques Prometheus http://localhost:9464/metrics
 
 Arrêt :
 
@@ -105,13 +107,13 @@ docker compose down -v
 
 Limites connues, documentées pour ne pas les laisser croire résolues :
 
-- Le guard est **fail-open** : une route sans `@Roles` est publique. C'est aujourd'hui le
-  cas de `GET /reporting/kpi`, accessible sans aucun en-tête.
-- Les comptes de démonstration sont codés en dur, mots de passe en clair et code MFA fixe.
-  La colonne `users.hashed_password` existe mais n'est pas encore utilisée par
-  l'authentification.
-- La chaîne d'audit n'est pas scellée par clé : elle détecte une corruption accidentelle,
-  pas une falsification volontaire.
+- Le guard est **fail-closed** depuis le correctif de sécurité : toute route sans `@Roles()` ou
+  `@Public()` est refusée. `GET /reporting/kpi` est désormais protégé par `@Roles`.
+- Les comptes de démonstration sont en base avec **argon2id** (migration `003`) et le MFA
+  utilise un code fixe (`123456`) en mode démonstration.
+- La chaîne d'audit est vérifiable via `GET /audit/verify` mais n'est pas scellée
+  par clé asymétrique : elle détecte une corruption accidentelle, pas une falsification
+  volontaire.
 
 ## CI/CD
 

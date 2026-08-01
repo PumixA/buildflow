@@ -89,6 +89,7 @@ describe('NCRService - Validation Qualité & TDD', () => {
 
     service.setStatus(created.id, 'IN_ANALYSIS', 'USR-QSE', 'Analyse QSE');
     service.assignCorrectiveTask(created.id, 'Reprendre coulage', 'USR-CHEF');
+    service.setStatus(created.id, 'RESOLVED', 'USR-QSE', 'Résolution validée');
     service.addClosureProof(created.id, 's3://proof', 'USR-CHEF');
     const closed = service.closeNCR(created.id, 'USR-QSE');
 
@@ -138,6 +139,11 @@ describe('NCRService - Validation Qualité & TDD', () => {
       priority: 'MEDIUM'
     });
 
+    expect(() => service.closeNCR(created.id, 'USR-QSE')).toThrow(
+      'Transition invalide : OPEN → CLOSED'
+    );
+
+    service.setStatus(created.id, 'RESOLVED', 'USR-QSE', 'Résolu');
     expect(() => service.closeNCR(created.id, 'USR-QSE')).toThrow(
       'Impossible de clôturer sans preuve photo'
     );

@@ -14,3 +14,8 @@
 - `infra/messaging` : contrats de bus d'événements.
 
 Cette structure sert de base aux implémentations des phases 3 à 13.
+
+> **Note 2026-07 :** Les dossiers `services/*-service/` contiennent des spécifications
+> pour les futurs conteneurs dédiés (V2). Le code actuel est dans
+> `services/api-gateway/src/modules/` (architecture modulaire monoconteneur — voir
+> `docs/architecture-c4-summary.md`).

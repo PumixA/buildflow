@@ -1,3 +1,4 @@
+/** Graphique de démonstration statique — à brancher sur `GET /sync/status` en V2. */
 export function SyncChart() {
   return (
     <div className="chart-box">

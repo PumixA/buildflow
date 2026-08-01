@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { RolesGuard } from './auth/roles.guard';
 import { AuditModule } from './audit/audit.module';
@@ -14,12 +15,14 @@ import { StorageModule } from './storage/storage.module';
 import { SyncModule } from './sync/sync.module';
 
 @Module({
-  imports: [DatabaseModule, MessagingModule, HealthModule, NcrModule, ProjectsModule, HseModule, AuthModule, ReportingModule, SyncModule, StorageModule, AuditModule],
+  imports: [
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
+    DatabaseModule, MessagingModule, HealthModule, NcrModule, ProjectsModule,
+    HseModule, AuthModule, ReportingModule, SyncModule, StorageModule, AuditModule
+  ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard
-    }
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard }
   ]
 })
 export class AppModule {}
