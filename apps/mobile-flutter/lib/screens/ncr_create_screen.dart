@@ -20,7 +20,6 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _projectId = '';
-  String _projectName = '';
   List<Map<String, String>> _projects = [];
   bool _loadingProjects = true;
   String _severity = 'MAJOR';
@@ -55,7 +54,6 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
             }).where((p) => p['id']!.isNotEmpty).toList();
             if (_projects.isNotEmpty) {
               _projectId = _projects.first['id']!;
-              _projectName = _projects.first['name']!;
             }
             _loadingProjects = false;
           });
@@ -186,7 +184,7 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
             _loadingProjects
               ? const LinearProgressIndicator()
               : DropdownButtonFormField<String>(
-                  value: _projectId.isNotEmpty ? _projectId : null,
+                  initialValue: _projectId.isNotEmpty ? _projectId : null,
                   hint: const Text('Sélectionner un chantier'),
                   decoration: const InputDecoration(
                     labelText: 'Chantier',
@@ -199,8 +197,7 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
                   )).toList(),
                   onChanged: (val) {
                     if (val != null) {
-                      final p = _projects.firstWhere((p) => p['id'] == val);
-                      setState(() { _projectId = val; _projectName = p['name'] ?? ''; });
+                      setState(() => _projectId = val);
                     }
                   }
                 ),
