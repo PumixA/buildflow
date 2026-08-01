@@ -1,3 +1,6 @@
+> **📆 Document historique** — état au 31 mars 2026. Certains constats ne sont plus vrais
+> (ex: guard fail-open, auth en clair). Voir `fix/audit-final` pour les corrections.
+
 # Recette Finale BuildFlow — 31 mars 2026
 
 ## Objectif
