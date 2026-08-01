@@ -63,8 +63,10 @@ export default function NcrListPage() {
             <select value={statut} onChange={(e) => setStatut(e.target.value)} className="filter-select">
               <option value="all">Tous les statuts</option>
               <option value="OUVERT">Ouvert</option>
+              <option value="EN_COURS">En cours</option>
               <option value="EN_ANALYSE">En analyse</option>
               <option value="RESOLU">Résolu</option>
+              <option value="CLOTURE">Clôturé</option>
             </select>
             <button onClick={() => {}} className="filter-button">Filtrer</button>
             <Link href="/ncr/nouveau" className="filter-button">+ Nouvelle NCR</Link>
