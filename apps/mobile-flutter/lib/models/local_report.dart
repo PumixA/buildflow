@@ -6,6 +6,7 @@ class LocalReport {
   final String? photoPath;
   final double latitude;
   final double longitude;
+  final String? projectId;
   final String status;
   final int version;
   final String createdAt;
@@ -18,6 +19,7 @@ class LocalReport {
     this.photoPath,
     this.latitude = 0,
     this.longitude = 0,
+    this.projectId,
     required this.status,
     required this.version,
     required this.createdAt
@@ -32,6 +34,7 @@ class LocalReport {
       'photo_path': photoPath,
       'latitude': latitude,
       'longitude': longitude,
+      'project_id': projectId,
       'status': status,
       'version': version,
       'created_at': createdAt
