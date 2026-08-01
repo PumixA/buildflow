@@ -52,7 +52,12 @@ const NCR_SELECT = `
   SELECT n.id, n.creator_id, n.title, n.description, n.status, n.priority,
          n.latitude, n.longitude, n.sync_status, n.local_id, n.version,
          n.created_at, n.updated_at,
-         COALESCE(p.name, n.project_id::text) AS project_name
+         COALESCE(p.name, n.project_id::text) AS project_name,
+         COALESCE(
+           (SELECT json_agg(json_build_object('s3_url', np.s3_url))
+            FROM ncr_photos np WHERE np.ncr_id = n.id),
+           '[]'::json
+         ) AS photos
   FROM ncr n
   LEFT JOIN projects p ON p.id = n.project_id
 `;
@@ -147,6 +152,9 @@ export class NcrService {
   }
 
   private toManagedNcr(row: Record<string, unknown>): ManagedNcr {
+    const photos = Array.isArray(row['photos'])
+      ? (row['photos'] as Array<Record<string,unknown>>).map((p) => p.s3_url ?? p.url ?? '').filter(Boolean)
+      : [];
     return {
       id: String(row['id']),
       projectId: String(row['project_name'] ?? ''),
@@ -157,7 +165,7 @@ export class NcrService {
       priority: String(row['priority'] ?? 'MEDIUM') as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
       latitude: Number(row['latitude'] ?? 0),
       longitude: Number(row['longitude'] ?? 0),
-      photos: [],
+      photos: photos as string[],
       sync_status: Boolean(row['sync_status']),
       localId: String(row['local_id'] ?? ''),
       version: Number(row['version'] ?? 1),
@@ -196,7 +204,7 @@ export class NcrService {
           const [meta, b64] = photo.split(',', 2);
           const mime = meta.split(':')[1]?.split(';')[0] ?? 'image/png';
           this.fireAndForget(
-            this.attachPhoto(created.id, {
+            this.addPhoto(created.id, {
               actorId: input.creatorId,
               fileName: `photo-${i + 1}.${mime.split('/')[1] ?? 'png'}`,
               contentType: mime,
