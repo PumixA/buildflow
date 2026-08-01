@@ -1,3 +1,6 @@
+> **📆 Snapshot historique** — 31 mars 2026. Les corrections décrites (guard fail-closed,
+> auth DB/argon2) ont été appliquées depuis. État « avant/après » documentaire.
+
 # Exécution des Sprints de Correction (31 mars 2026)
 
 ## Sprint 1 — Conformité UI/UX
