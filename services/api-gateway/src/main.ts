@@ -41,7 +41,8 @@ async function bootstrap(): Promise<void> {
       origin: ['http://localhost:3001', 'http://127.0.0.1:3001'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       credentials: true
-    }
+    },
+    bodyParser: { json: { limit: '10mb' } }
   });
   app.useGlobalPipes(
     new ValidationPipe({
