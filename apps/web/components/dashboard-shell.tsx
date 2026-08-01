@@ -13,7 +13,7 @@ type DashboardShellProps = {
 
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, role, logout } = useAuth();
-  const canList = role === 'ADMIN' || role === 'RESPONSABLE_QSE' || role === 'DIRECTION_TRAVAUX';
+  const canList = !role || role === 'ADMIN' || role === 'RESPONSABLE_QSE' || role === 'DIRECTION_TRAVAUX';
   const { worksite } = useWorksite();
   const router = useRouter();
   const [ready, setReady] = useState(false);
