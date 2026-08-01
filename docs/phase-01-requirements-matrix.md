@@ -1,3 +1,5 @@
+> **📆 Document historique** — statuts figés à la phase 1. La plupart des `Planned` sont désormais réalisés.
+
 # Phase 1 - Matrice d'exigences BuildFlow
 
 ## Sources analysées
