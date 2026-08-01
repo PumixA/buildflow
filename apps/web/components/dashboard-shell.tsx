@@ -19,10 +19,13 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
 
   useEffect(() => {
     setReady(true);
-    if (!isAuthenticated) {
+  }, []);
+
+  useEffect(() => {
+    if (ready && !isAuthenticated) {
       router.replace('/login');
     }
-  }, []);
+  }, [ready, isAuthenticated, router]);
 
   return (
     <main className="app-shell" suppressHydrationWarning>
