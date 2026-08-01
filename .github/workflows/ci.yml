@@ -45,6 +45,80 @@ jobs:
           else
             echo "No build script in this ref, build step skipped."
           fi
+      # Bloquant sur les vulnérabilités critiques : il n'y en a aucune
+      # aujourd'hui, l'étape échouera donc si l'une apparaît.
+      - name: Audit des dépendances (critique — bloquant)
+        run: npm audit --audit-level=critical
+      # Les vulnérabilités « high » restantes proviennent de dépendances
+      # transitives de NestJS, Next et de la chaîne @typescript-eslint. Les
+      # corriger impose des montées de version majeures, hors périmètre d'un
+      # correctif de CI. `npm audit fix` a été essayé : il fait passer le total
+      # de 22 à 37. L'étape reste donc informative, mais visible à chaque run
+      # plutôt que passée sous silence.
+      - name: Audit des dépendances (high — informatif)
+        continue-on-error: true
+        run: |
+          npm audit --audit-level=high || true
+          npm audit --json > audit.json 2>/dev/null || true
+          node -e "
+            const a = require('./audit.json');
+            const v = a.metadata.vulnerabilities;
+            const l = Object.entries(v).filter(([, n]) => n).map(([k, n]) => k + ': ' + n).join(', ');
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### npm audit\n\n' + l + '\n');
+          " || true
+
+  # Démarre réellement la stack et vérifie qu'elle répond.
+  #
+  # Le job `docker-build` construit l'image et la pousse, sans jamais la lancer.
+  # C'est ce qui a laissé passer la panne du 04/07 : le PR #15 avait ajouté un
+  # `require()` OpenTelemetry sans les paquets correspondants ; l'image se
+  # construisait sans erreur et l'API sortait en MODULE_NOT_FOUND au démarrage.
+  # Personne ne l'a vu pendant trois semaines. Construire n'est pas démarrer.
+  smoke:
+    name: smoke-docker
+    runs-on: ubuntu-latest
+    needs: [api]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Générer le secret de signature
+        run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+      - name: Démarrer la stack
+        run: docker compose up -d --build api
+      - name: Attendre que l'API soit saine
+        run: |
+          for i in $(seq 1 30); do
+            if [ "$(docker inspect -f '{{.State.Health.Status}}' buildflow-api-1 2>/dev/null)" = "healthy" ]; then
+              echo "API saine après $((i * 5))s"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::L'API n'est jamais devenue saine"
+          docker compose logs api
+          exit 1
+      - name: Vérifier les réponses HTTP
+        run: |
+          set -e
+          code() { curl -s -o /dev/null -w '%{http_code}' "$1"; }
+
+          test "$(code http://localhost:3000/health)" = "200" \
+            || { echo "::error::/health ne répond pas 200"; exit 1; }
+
+          # Le guard est fail-closed : une route protégée doit refuser une
+          # requête anonyme. Vérifie que le durcissement survit à la mise en image.
+          test "$(code http://localhost:3000/ncr)" = "401" \
+            || { echo "::error::/ncr accessible sans authentification"; exit 1; }
+
+          # Les migrations doivent s'appliquer au démarrage, sans intervention.
+          docker compose logs api 2>&1 | grep -q "MigrationService" \
+            || { echo "::error::aucune trace d'application des migrations"; exit 1; }
+
+          echo "Stack démarrée et conforme."
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs
+      - name: Arrêt
+        if: always()
+        run: docker compose down -v
 
   web:
     name: web
