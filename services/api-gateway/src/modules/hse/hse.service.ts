@@ -60,17 +60,21 @@ export class HseService {
     private readonly messagingService: MessagingService
   ) {}
 
+  private fireAndForget(op: Promise<unknown>, ctx: string): void {
+    op.catch((err) => this.logger.error(`Opération secondaire HSE échouée: ${ctx}`, err));
+  }
+
   createIncident(input: CreateIncidentInput): ReturnType<DomainHseService['createIncident']> {
     const incident = this.domainService.createIncident(input);
-    void this.persistIncident(incident.id, input.projectId, input.creatorId, input.type, input.severity, input.description, incident.status);
-    void this.messagingService.publish({
+    this.fireAndForget(this.persistIncident(incident.id, input.projectId, input.creatorId, input.type, input.severity, input.description, incident.status), 'persistIncident');
+    this.fireAndForget(this.messagingService.publish({
       topic: 'hse.incident.created',
       timestamp: new Date().toISOString(),
       payload: {
         id: incident.id,
         severity: incident.severity
       }
-    });
+    }), 'publishIncident');
     this.auditService.append('hse.incident.created', input.creatorId, {
       incidentId: incident.id,
       severity: incident.severity
@@ -80,15 +84,15 @@ export class HseService {
 
   createAction(input: CreateActionInput): ReturnType<DomainHseService['createAction']> {
     const action = this.domainService.createAction(input);
-    void this.persistAction(input, action.id);
-    void this.messagingService.publish({
+    this.fireAndForget(this.persistAction(input, action.id), "persistAction");
+    this.fireAndForget(this.messagingService.publish({
       topic: 'hse.action.created',
       timestamp: new Date().toISOString(),
       payload: {
         id: action.id,
         incidentId: action.incidentId
       }
-    });
+    }), 'publishAction');
     this.auditService.append('hse.action.created', input.responsibleId, {
       actionId: action.id,
       incidentId: action.incidentId
@@ -98,14 +102,14 @@ export class HseService {
 
   confirmSiteSecured(incidentId: string): ReturnType<DomainHseService['confirmSiteSecured']> {
     const updated = this.domainService.confirmSiteSecured(incidentId);
-    void this.persistIncidentStatus(incidentId, updated.status);
+    this.fireAndForget(this.persistIncidentStatus(incidentId, updated.status), "persistIncidentStatus");
     this.auditService.append('hse.site.secured', 'SYSTEM', { incidentId });
     return updated;
   }
 
   resolveIncident(incidentId: string): ReturnType<DomainHseService['resolveIncident']> {
     const resolved = this.domainService.resolveIncident(incidentId);
-    void this.persistIncidentStatus(incidentId, resolved.status);
+    this.fireAndForget(this.persistIncidentStatus(incidentId, resolved.status), "persistIncidentStatus");
     this.auditService.append('hse.incident.resolved', 'SYSTEM', { incidentId });
     return resolved;
   }
