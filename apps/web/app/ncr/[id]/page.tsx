@@ -88,8 +88,16 @@ export default function NcrDetailPage({ params }: Props) {
             {photos.length > 0 ? (
               <>
                 <div className="proof-grid">
-                  {photos.map((photo) => (
-                    <PhotoPreuve key={photo.id} ncrId={detail.id} photo={photo} />
+                  {photos.map((photo, idx) => (
+                    typeof photo === 'string' ? (
+                      <figure key={idx} className="proof-card proof-photo">
+                        <img src={photo} alt={`Photo ${idx + 1}`} style={{maxWidth:'100%',maxHeight:200,objectFit:'contain',borderRadius:8}} />
+                        <figcaption>Photo {idx + 1}</figcaption>
+                      </figure>
+                    ) : (
+                      <PhotoPreuve key={photo.id} ncrId={detail.id} photo={photo} />
+                    )
+                  ))}
                   ))}
                 </div>
                 <p className="worm-note">

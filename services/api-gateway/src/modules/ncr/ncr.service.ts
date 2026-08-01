@@ -189,6 +189,26 @@ export class NcrService {
       this.persistToDatabase(created),
       `Persistance de la NCR ${created.id} échouée`
     );
+    // Store photos in ncr_photos table (base64 → S3 via worm storage)
+    if (input.photos?.length > 0) {
+      for (const [i, photo] of input.photos.entries()) {
+        if (photo.startsWith('data:')) {
+          const [meta, b64] = photo.split(',', 2);
+          const mime = meta.split(':')[1]?.split(';')[0] ?? 'image/png';
+          this.fireAndForget(
+            this.attachPhoto(created.id, {
+              actorId: input.creatorId,
+              fileName: `photo-${i + 1}.${mime.split('/')[1] ?? 'png'}`,
+              contentType: mime,
+              payloadBase64: b64,
+              latitude: input.latitude,
+              longitude: input.longitude
+            }),
+            `Persistance photo ${i + 1} de ${created.id} échouée`
+          );
+        }
+      }
+    }
     this.fireAndForget(
       this.messagingService.publish({
         topic: 'ncr.created',
