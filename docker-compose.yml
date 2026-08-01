@@ -72,7 +72,6 @@ services:
       AMQP_URL: amqp://guest:guest@rabbitmq:5672
       AMQP_EXCHANGE: buildflow.events
       AUDIT_LOG_FILE: data/audit-log.jsonl
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "3000:3000"
     depends_on:
