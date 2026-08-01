@@ -515,6 +515,7 @@ export class NcrService {
     );
   }
 
+  // TODO: extraire dans un IdResolver partagé (dupliqué dans HseService)
   private async ensureProject(projectCode: string): Promise<string> {
     const fromMemory = this.projectToDbId.get(projectCode);
     if (fromMemory) return fromMemory;
