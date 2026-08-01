@@ -158,6 +158,9 @@ export class NcrService {
 
   closeNCR(ncrId: string, validatorId: string): ManagedNcr {
     const ncr = this.getById(ncrId);
+    if (ncr.status !== 'RESOLVED') {
+      throw new Error(`Transition invalide : ${ncr.status} → CLOSED. La NCR doit être RESOLVED avant clôture.`);
+    }
     if (ncr.closureProofs.length === 0) {
       throw new Error('Impossible de clôturer sans preuve photo');
     }
