@@ -1,6 +1,5 @@
 import { Public } from './public.decorator';
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { CreateSessionDto, ValidateTokenDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 
@@ -18,7 +17,6 @@ export class AuthController {
 
   // Limitation appliquée ici seulement : c'est le point d'entrée non
   // authentifié, donc le seul exposé au bruteforce.
-  @UseGuards(ThrottlerGuard)
   @Post('session')
   session(@Body() payload: CreateSessionDto): ReturnType<AuthService['createSession']> {
     return this.authService.createSession(payload);
