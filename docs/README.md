@@ -14,6 +14,7 @@ documentation d'une plaquette.
 |---|---|
 | [architecture.md](architecture.md) | Architecture réellement livrée, écarts assumés avec le cadrage |
 | [modele-de-donnees.md](modele-de-donnees.md) | Schéma PostgreSQL, migrations, contraintes |
+| [contrats-interface.md](contrats-interface.md) | Endpoints, requêtes et réponses JSON réelles |
 | [securite.md](securite.md) | Authentification, contrôle d'accès, preuves WORM, limites |
 | [tests-et-qualite.md](tests-et-qualite.md) | Couverture réelle, chaîne d'intégration |
 | [exploitation.md](exploitation.md) | Démarrage, vérification, flux Git |
