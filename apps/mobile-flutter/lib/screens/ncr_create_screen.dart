@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../models/local_report.dart';
+import '../services/auth_service.dart';
 import '../services/local_store.dart';
 
 class NcrCreateScreen extends StatefulWidget {
@@ -16,7 +19,10 @@ class NcrCreateScreen extends StatefulWidget {
 class _NcrCreateScreenState extends State<NcrCreateScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _projectController = TextEditingController(text: 'PROJ-1');
+  String _projectId = '';
+  String _projectName = '';
+  List<Map<String, String>> _projects = [];
+  bool _loadingProjects = true;
   String _severity = 'MAJOR';
   File? _photo;
   double _latitude = 0;
@@ -28,6 +34,36 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
   void initState() {
     super.initState();
     _getLocation();
+    _fetchProjects();
+  }
+
+  Future<void> _fetchProjects() async {
+    try {
+      final auth = await AuthService.instance.authHeaders();
+      final res = await http.get(
+        Uri.parse('${AuthService.instance.apiBaseUrl}/projects'),
+        headers: {'Content-Type': 'application/json', ...auth}
+      );
+      if (res.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(res.body);
+        final List<dynamic> data = (body['items'] as List<dynamic>?) ?? [body];
+        if (mounted) {
+          setState(() {
+            _projects = data.map<Map<String, String>>((p) => {
+              'id': p['id']?.toString() ?? '',
+              'name': p['name']?.toString() ?? p['nom']?.toString() ?? ''
+            }).where((p) => p['id']!.isNotEmpty).toList();
+            if (_projects.isNotEmpty) {
+              _projectId = _projects.first['id']!;
+              _projectName = _projects.first['name']!;
+            }
+            _loadingProjects = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingProjects = false);
+    }
   }
 
   Future<void> _getLocation() async {
@@ -116,7 +152,6 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _projectController.dispose();
     super.dispose();
   }
 
@@ -147,15 +182,28 @@ class _NcrCreateScreenState extends State<NcrCreateScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Project
-            TextField(
-              controller: _projectController,
-              decoration: const InputDecoration(
-                labelText: 'Chantier',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.construction)
-              )
-            ),
+            // Project dropdown
+            _loadingProjects
+              ? const LinearProgressIndicator()
+              : DropdownButtonFormField<String>(
+                  value: _projectId.isNotEmpty ? _projectId : null,
+                  hint: const Text('Sélectionner un chantier'),
+                  decoration: const InputDecoration(
+                    labelText: 'Chantier',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.construction)
+                  ),
+                  items: _projects.map((p) => DropdownMenuItem(
+                    value: p['id'],
+                    child: Text(p['name'] ?? p['id'] ?? '')
+                  )).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      final p = _projects.firstWhere((p) => p['id'] == val);
+                      setState(() { _projectId = val; _projectName = p['name'] ?? ''; });
+                    }
+                  }
+                ),
             const SizedBox(height: 12),
 
             // GPS card
