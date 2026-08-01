@@ -79,7 +79,13 @@ export default function NouvelleNcrPage() {
   };
 
   const choisirPhoto = (event: ChangeEvent<HTMLInputElement>) => {
-    setPhoto(event.target.files?.[0]?.name ?? '');
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') setPhoto(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const soumettre = async (event: FormEvent) => {
