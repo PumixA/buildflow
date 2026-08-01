@@ -58,7 +58,7 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
                 <Link href="/chantiers" className="action-link">aucun — en ouvrir un</Link>
               )}
             </p>
-            {email && <span className="user-email">{email}</span>}
+            {ready && email && <span className="user-email">{email}</span>}
             {ready && <button onClick={logout} className="btn-logout">Déconnexion</button>}
           </div>
         </header>
