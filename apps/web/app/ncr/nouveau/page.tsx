@@ -31,7 +31,7 @@ function parseGps(localisation: string | null): { lat: string; lng: string } | n
 
 export default function NouvelleNcrPage() {
   const router = useRouter();
-  const { email } = useAuth();
+  const { email, role } = useAuth();
   const { worksite, ready, openWorksite } = useWorksite();
 
   const [chantiers, setChantiers] = useState<Worksite[]>([]);
@@ -118,7 +118,12 @@ export default function NouvelleNcrPage() {
         openWorksite({ id: chantier.id, name: chantier.nom });
       }
 
-      router.push(`/ncr/${cree.id}`);
+      // Le chef de chantier n'a pas accès à la liste : le renvoyer vers l'accueil
+      if (role === 'CHEF_CHANTIER') {
+        router.push('/');
+      } else {
+        router.push(`/ncr/${cree.id}`);
+      }
     } catch (err) {
       setErreur((err as Error).message);
       setEnvoi(false);
