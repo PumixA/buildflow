@@ -245,7 +245,7 @@ export default function NouvelleNcrPage() {
             <button type="submit" className="filter-button" disabled={envoi || !complet}>
               {envoi ? 'Enregistrement...' : 'Déclarer la NCR'}
             </button>
-            <span className="field-hint">Auteur: {email ?? 'non identifié'}</span>
+            <span className="field-hint" suppressHydrationWarning>Auteur: {email ?? 'non identifié'}</span>
           </div>
         </form>
       </section>
