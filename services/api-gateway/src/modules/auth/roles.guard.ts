@@ -68,8 +68,11 @@ export class RolesGuard implements CanActivate {
     }
 
     if (process.env.NODE_ENV === 'development') {
+      // Restreindre le bypass x-role aux appels locaux en dev
+      const ip = (request as Record<string, unknown>).ip as string | undefined;
+      const isLocal = !ip || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
       const role = request.headers['x-role'];
-      if (role) {
+      if (role && isLocal) {
         const attendus = requiredRoles?.length ? requiredRoles.join(', ') : 'un jeton valide';
         console.warn(`[DEV] x-role bypass used: ${role} for endpoint requiring ${attendus}`);
         if (requiredRoles?.length && !requiredRoles.includes(role as Role)) {
