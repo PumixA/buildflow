@@ -1,20 +1,24 @@
-# Utiliser une image Node.js officielle comme image de base
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
-# Définir le répertoire de travail dans le conteneur
 WORKDIR /usr/src/app
-
-# Copier les fichiers de dépendances
 COPY package*.json ./
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci
 
-# Installer les dépendances de production
-RUN npm install --only=production
-
-# Copier le reste des fichiers de l'application
 COPY . .
+RUN npm run build
 
-# Exposer le port sur lequel l'application tourne
+FROM node:20-alpine AS runtime
+
+WORKDIR /usr/src/app
+ENV NODE_ENV=production
+
+COPY package*.json ./
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --omit=dev
+
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/infra ./infra
+
 EXPOSE 3000
-
-# Commande pour démarrer l'application
-CMD [ "npm", "start" ]
+CMD ["npm", "run", "start:prod"]

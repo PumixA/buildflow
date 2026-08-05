@@ -2,6 +2,64 @@
 
 Plateforme BuildFlow orientée Qualité (NCR), Sécurité (HSE), offline-first et traçabilité.
 
+## Démarrage Docker local avec rechargement
+
+Mode local calqué sur le fonctionnement avec bind mounts : les changements faits dans le code sont montés directement dans les conteneurs.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local-dev.yml up --build --watch
+```
+
+Après le premier build, relance simple sans rebuild :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local-dev.yml up --watch
+```
+
+- API en watch : http://localhost:3000/health
+- Web Next dev : http://localhost:3001
+
+## Démarrage Docker complet
+
+**Prérequis — une seule fois par poste.** L’API refuse de démarrer sans secret de
+signature des jetons, et `docker-compose.yml` n’en fournit volontairement aucun par
+défaut : une valeur écrite dans un fichier versionné serait publique, donc équivalente
+à pas de secret. Générer le sien dans `.env` (non versionné) :
+
+```bash
+echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+```
+
+Sans cette variable, `docker compose up` s’arrête immédiatement avec le message
+indiquant la commande ci-dessus.
+
+Un seul lancement démarre ensuite l’API, le back-office web, PostgreSQL, RabbitMQ et MinIO :
+
+```bash
+docker compose up --build
+```
+
+Accès locaux :
+
+- Web : http://localhost:3001
+- API : http://localhost:3000/health
+- RabbitMQ Management : http://localhost:15672 (`guest` / `guest`)
+- MinIO Console : http://localhost:9001 (`buildflow` / `buildflow-secret`)
+- Nginx (TLS) : https://localhost/health (certificat auto-signé)
+- OpenTelemetry : métriques Prometheus http://localhost:9464/metrics
+
+Arrêt :
+
+```bash
+docker compose down
+```
+
+Réinitialisation des volumes PostgreSQL/MinIO :
+
+```bash
+docker compose down -v
+```
+
 ## Démarrage rapide (API Gateway)
 
 1. `npm install`
@@ -38,9 +96,24 @@ Plateforme BuildFlow orientée Qualité (NCR), Sécurité (HSE), offline-first e
 
 ## Sécurité
 
-- OIDC/MFA simulé via module auth.
-- RBAC via décorateur `@Roles` et guard global (`x-role` requis).
-- journal d'audit append-only hashé.
+- OIDC/MFA simulé via le module `auth`. `POST /auth/session` délivre un JWT signé (HS256)
+  après mot de passe **et** code MFA.
+- RBAC via le décorateur `@Roles` et le guard global `RolesGuard`.
+  L'authentification se fait par en-tête `Authorization: Bearer <token>`.
+- L'en-tête `x-role` est un **raccourci de développement uniquement** : il n'est accepté
+  que si `NODE_ENV=development`. Les conteneurs tournant en `production`, une requête
+  portant seulement `x-role` y reçoit `401`.
+- Journal d'audit append-only, chaîné par hachage SHA-256.
+
+Limites connues, documentées pour ne pas les laisser croire résolues :
+
+- Le guard est **fail-closed** depuis le correctif de sécurité : toute route sans `@Roles()` ou
+  `@Public()` est refusée. `GET /reporting/kpi` est désormais protégé par `@Roles`.
+- Les comptes de démonstration sont en base avec **argon2id** (migration `003`) et le MFA
+  utilise un code fixe (`123456`) en mode démonstration.
+- La chaîne d'audit est vérifiable via `GET /audit/verify` mais n'est pas scellée
+  par clé asymétrique : elle détecte une corruption accidentelle, pas une falsification
+  volontaire.
 
 ## CI/CD
 
@@ -71,13 +144,13 @@ Workflows:
   - création/usage de l'émulateur Android,
   - tests qualité,
   - flux Git recommandé et commandes de vérification.
-- Voir `docs/flux-git-fiabilite-complet.md` pour:
-  - le runbook complet du flux `work -> dev -> release -> main`,
-  - les règles PR/CI obligatoires,
-  - la procédure de tag release.
 
 ## Variables d'environnement clés
 
+- `JWT_SECRET` — **obligatoire** hors `NODE_ENV=development|test`. Signature des jetons
+  de session. Le démarrage échoue si la variable est absente, reprend la valeur de
+  développement publiée dans le dépôt, ou fait moins de 32 caractères.
+  Générer : `openssl rand -hex 32`
 - `DATABASE_URL`
 - `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_JWKS_URI`, `OIDC_REQUIRE_MFA`
 - `S3_REGION`, `S3_WORM_BUCKET`

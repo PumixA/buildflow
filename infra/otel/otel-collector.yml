@@ -1,0 +1,44 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 128
+
+processors:
+  # SIEM rules — detection d'evenements de securite
+  transform/siem:
+    log_statements:
+      - context: log
+        statements:
+          # Regle 1 : tentative de brute-force (>5 echecs d'auth en 60s)
+          - set(cache, "bruteforce") where attributes["http.route"] == "/auth/session" and attributes["http.status_code"] == 401
+          # Regle 2 : acces non autorise (403)
+          - set(attributes["alert.level"], "warn") where attributes["http.status_code"] == 403
+          # Regle 3 : modification critique (cloture NCR)
+          - set(attributes["alert.level"], "info") where attributes["http.route"] != nil and IsMatch(attributes["http.route"], ".*/close")
+
+exporters:
+  debug:
+    verbosity: normal
+  prometheus:
+    endpoint: 0.0.0.0:9464
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, transform/siem]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, debug]

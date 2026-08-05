@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "noEmit": false,
+    "declaration": false
+  },
+  "include": [
+    "services/api-gateway/src/**/*.ts",
+    "src/**/*.ts",
+    "libs/domain/src/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.spec.ts",
+    "apps/**",
+    "node_modules/**",
+    "coverage/**",
+    "dist/**"
+  ]
+}

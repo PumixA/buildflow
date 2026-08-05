@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: npm run start:dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./src:/usr/src/app/src:delegated
+      - ./services:/usr/src/app/services:delegated
+      - ./libs:/usr/src/app/libs:delegated
+      - ./test:/usr/src/app/test:delegated
+      - ./infra:/usr/src/app/infra:delegated
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: builder
+    command: npm --workspace apps/web run dev -- --hostname 0.0.0.0
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+      API_BASE_URL: http://api:3000
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./apps/web:/usr/src/app/apps/web
+      - /usr/src/app/apps/web/node_modules
+      - /usr/src/app/apps/web/.next

@@ -1,0 +1,127 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: buildflow
+      POSTGRES_USER: buildflow
+      POSTGRES_PASSWORD: buildflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildflow -d buildflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: buildflow
+      MINIO_ROOT_PASSWORD: buildflow-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 buildflow buildflow-secret; do sleep 2; done &&
+      mc mb --ignore-existing --with-lock local/buildflow-worm-evidences
+      "
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://buildflow:buildflow@postgres:5432/buildflow
+      OIDC_PROVIDER: http://localhost:8080
+      OIDC_ISSUER: http://localhost:8080/realms/buildflow
+      OIDC_AUDIENCE: buildflow-api
+      OIDC_JWKS_URI: http://localhost:8080/realms/buildflow/protocol/openid-connect/certs
+      OIDC_REQUIRE_MFA: "false"
+      # Volontairement sans valeur par défaut : un secret écrit ici serait publié
+      # dans le dépôt, donc équivalent à pas de secret. Compose refuse de démarrer
+      # tant que la variable n'est pas fournie (fichier .env, non versionné).
+      JWT_SECRET: ${JWT_SECRET:?manquant - generer avec openssl rand -hex 32 puis renseigner .env}
+      S3_REGION: eu-west-3
+      S3_ENDPOINT: http://minio:9000
+      S3_WORM_BUCKET: buildflow-worm-evidences
+      AWS_ACCESS_KEY_ID: buildflow
+      AWS_SECRET_ACCESS_KEY: buildflow-secret
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      AMQP_EXCHANGE: buildflow.events
+      AUDIT_LOG_FILE: data/audit-log.jsonl
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      API_BASE_URL: http://api:3000
+    ports:
+      - "3001:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.157.0
+    command: ["--config", "/etc/otel-collector.yml"]
+    volumes:
+      - ./infra/otel/otel-collector.yml:/etc/otel-collector.yml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "9464:9464"
+
+  nginx:
+    build:
+      context: ./infra/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "443:443"
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  minio-data:
