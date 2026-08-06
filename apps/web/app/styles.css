@@ -1013,46 +1013,56 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
-  padding: var(--pad);
+  background: radial-gradient(circle at top left, #10243f 0%, #080f1b 38%, var(--bg-main) 100%);
+  padding: 24px;
 }
 
 .login-card {
-  background: var(--card-bg);
+  background: var(--bg-panel);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 40px;
+  border-radius: 14px;
+  padding: 36px;
   width: 100%;
   max-width: 420px;
 }
 
 .login-brand {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
-.login-brand .brand-icon {
-  font-size: 36px;
-  color: var(--accent);
+.login-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(31,125,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  margin: 0 auto 14px;
 }
 
 .login-brand h1 {
-  font-size: 24px;
-  margin: 8px 0 4px;
+  font-size: 26px;
+  margin: 0 0 4px;
   color: var(--text);
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .login-brand p {
   font-size: 13px;
-  color: var(--sub);
+  color: var(--text-soft);
+  margin: 0;
 }
 
 .login-error {
-  background: rgba(220, 38, 38, 0.12);
-  border: 1px solid #dc2626;
+  background: rgba(255, 77, 79, 0.12);
+  border: 1px solid rgba(255, 77, 79, 0.45);
   color: #fca5a5;
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 16px;
   font-size: 13px;
 }
@@ -1066,71 +1076,120 @@ a {
 .login-form label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+}
+
+.login-label {
   font-size: 13px;
-  color: var(--sub);
+  color: var(--text-soft);
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-soft);
+  pointer-events: none;
 }
 
 .login-form input {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 10px 12px;
+  width: 100%;
+  background: var(--bg-main);
+  border: 1px solid #2a446c;
+  border-radius: 8px;
+  padding: 10px 12px 10px 36px;
   color: var(--text);
   font-size: 14px;
+  font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
 }
 
 .login-form input:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
-.login-form button[type="submit"] {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 14px;
-  font-weight: 600;
+.login-eye {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: 0;
+  color: var(--text-soft);
   cursor: pointer;
-  transition: opacity 0.15s;
-  margin-top: 4px;
+  padding: 4px;
+  display: flex;
 }
 
-.login-form button[type="submit"]:disabled {
-  opacity: 0.6;
+.login-eye:hover {
+  color: var(--text);
+}
+
+.login-submit {
+  background: #133969;
+  color: #fff;
+  border: 1px solid #2a446c;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 6px;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: #1a4a82;
+}
+
+.login-submit:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-.login-form .btn-back {
+.login-back {
   background: transparent;
-  border: 1px solid var(--line);
-  color: var(--sub);
-  border-radius: 6px;
-  padding: 10px;
+  border: 0;
+  color: var(--text-soft);
   font-size: 13px;
+  font-family: inherit;
   cursor: pointer;
+  padding: 4px 0;
+  text-align: center;
 }
 
-.login-form .mfa-prompt {
-  text-align: center;
-  color: var(--accent);
+.login-back:hover {
+  color: var(--text);
+}
+
+.login-mfa-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(31,125,255,0.08);
+  border: 1px solid rgba(31,125,255,0.25);
+  border-radius: 8px;
+  color: var(--primary);
   font-size: 13px;
   font-weight: 500;
 }
 
 .login-help {
   margin-top: 24px;
-  padding-top: 20px;
+  padding-top: 18px;
   border-top: 1px solid var(--line);
 }
 
 .login-help p {
   font-size: 11px;
-  color: var(--sub);
-  margin-bottom: 8px;
+  color: var(--text-soft);
+  margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1141,6 +1200,13 @@ a {
   color: #6b7280;
   padding: 2px 0;
   font-family: monospace;
+}
+
+.login-help-pass {
+  display: block;
+  font-size: 10px;
+  color: #4b5563;
+  margin-top: 6px;
 }
 
 /* ===== Topbar Right ===== */
