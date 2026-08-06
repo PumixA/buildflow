@@ -42,11 +42,6 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
           {canList && <Link href="/ncr" className="menu-link">Liste des NCR</Link>}
           <Link href="/ncr/nouveau" className="menu-link">Nouvelle NCR</Link>
         </div>
-        <div className="menu-group">
-          <p className="menu-title">MOBILE (TERRAIN)</p>
-          <span className="menu-link disabled">Saisie NCR Mobile</span>
-          <span className="menu-link disabled">Synchronisation</span>
-        </div>
       </aside>
       <section className="app-content">
         <header className="topbar">
