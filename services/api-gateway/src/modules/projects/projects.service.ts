@@ -2,7 +2,7 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { randomUUID } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { DatabaseService } from '../database/database.service';
-import { CreateProjectDto } from './dto/project.dto';
+import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 
 export type Project = {
   id: string;
@@ -100,6 +100,54 @@ export class ProjectsService {
 
     this.auditService.append('project.created', actorId, { projectId: id, name });
     return this.detail(id);
+  }
+
+  async update(projectId: string, input: UpdateProjectDto, actorId: string): Promise<Project> {
+    if (!this.databaseService.enabled) {
+      throw new ConflictException("Modification impossible : aucune base de données n'est configurée");
+    }
+
+    // Vérifie l'existence (lève NotFoundException si absent)
+    await this.detail(projectId);
+
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      // Vérifie l'unicité (sans bloquer si le nom n'a pas changé)
+      const existing = await this.databaseService.query(
+        'SELECT 1 FROM projects WHERE name = $1 AND id::text <> $2 LIMIT 1',
+        [name, projectId]
+      );
+      if (existing.rowCount) {
+        throw new ConflictException(`Un chantier nommé « ${name} » existe déjà`);
+      }
+      sets.push(`name = $${idx++}`);
+      values.push(name);
+    }
+
+    if (input.locationGps !== undefined) {
+      sets.push(`location_gps = $${idx++}`);
+      values.push(input.locationGps);
+    }
+
+    if (input.status !== undefined) {
+      sets.push(`status = $${idx++}`);
+      values.push(input.status);
+    }
+
+    if (sets.length === 0) return this.detail(projectId);
+
+    values.push(projectId);
+    await this.databaseService.query(
+      `UPDATE projects SET ${sets.join(', ')} WHERE id::text = $${idx}`,
+      values
+    );
+
+    this.auditService.append('project.updated', actorId, { projectId, changes: input });
+    return this.detail(projectId);
   }
 
   private toProject(row: Record<string, unknown>): Project {

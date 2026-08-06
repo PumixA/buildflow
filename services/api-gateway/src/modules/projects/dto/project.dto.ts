@@ -30,3 +30,24 @@ export class CreateProjectDto {
   @IsNotEmpty()
   actorId!: string;
 }
+
+export class UpdateProjectDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  locationGps?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(PROJECT_STATUSES)
+  status?: (typeof PROJECT_STATUSES)[number];
+
+  @IsString()
+  @IsNotEmpty()
+  actorId!: string;
+}

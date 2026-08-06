@@ -141,7 +141,6 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
       <nav className="bottom-nav">
         <NavLink href="/" icon="home" label="Accueil" active={isActive('/')} />
         <NavLink href="/chantiers" icon="chantiers" label="Chantiers" active={isActive('/chantiers')} />
-        {canList && <NavLink href="/hse" icon="hse" label="HSE" active={isActive('/hse')} />}
         {canList && <NavLink href="/ncr" icon="ncr" label="NCR" active={isActive('/ncr')} />}
         <NavLink href="/ncr/nouveau" icon="nouveau" label="Nouveau" active={isActive('/ncr/nouveau')} />
       </nav>
