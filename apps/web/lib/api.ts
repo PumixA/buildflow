@@ -209,6 +209,26 @@ export async function createNcr(input: CreateNcrInput): Promise<{ id: string }> 
   return postJson<{ id: string }>('/ncr', input);
 }
 
+export async function updateNcr(
+  id: string,
+  input: { title?: string; description?: string; priority?: string }
+): Promise<void> {
+  await patchJson(`/ncr/${encodeURIComponent(id)}`, input);
+}
+
+export async function setNcrStatus(
+  id: string,
+  status: string,
+  actorId: string,
+  comment?: string
+): Promise<void> {
+  await patchJson(`/ncr/${encodeURIComponent(id)}/status`, { status, actorId, comment });
+}
+
+export async function addNcrPhoto(id: string, data: string): Promise<void> {
+  await postJson(`/ncr/${encodeURIComponent(id)}/photo`, { data });
+}
+
 /** Plafond accepté par l'API : le contrôleur borne `limit` à 100. */
 const LIMITE_API = 100;
 
