@@ -91,7 +91,7 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         <div className="header-right">
           <div className="worksite-picker" ref={wsRef}>
             <button className="ws-toggle" onClick={() => { setWsOpen(!wsOpen); if (!wsOpen && wsList.length === 0) fetchWorksites().then(setWsList).catch(() => {}); }}>
-              <span>{worksite?.name ?? 'Chantiers'}</span>
+              <span>{worksite?.nom ?? worksite?.name ?? 'Chantiers'}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
             </button>
             {wsOpen && (
