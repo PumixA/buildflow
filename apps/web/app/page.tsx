@@ -4,12 +4,16 @@ import Link from 'next/link';
 import { StatusBadge } from '../components/badges';
 import { DashboardShell } from '../components/dashboard-shell';
 import { fetchHseDashboard, fetchNcrList, fetchWorksites } from '../lib/api';
+<<<<<<< HEAD
 import { useAuth } from '../lib/auth';
 import { peutCreerChantier, peutCreerNcr, peutListerNcr } from '../lib/roles';
+=======
+>>>>>>> origin/main
 import { usePoll } from '../lib/use-poll';
 import { useWorksite } from '../lib/worksite';
 
 export default function HomePage() {
+<<<<<<< HEAD
   const { role } = useAuth();
   const { worksite } = useWorksite();
 
@@ -28,6 +32,13 @@ export default function HomePage() {
     canListNcr ? 10000 : 60000,
     canListNcr ? (worksite?.name ?? 'all') : 'skip'
   );
+=======
+  const { worksite } = useWorksite();
+
+  const { data: hse } = usePoll(fetchHseDashboard);
+  const { data: ncrData } = usePoll(() => fetchNcrList(worksite?.name), 10000, worksite?.name ?? 'all');
+  const { data: chantiers } = usePoll(fetchWorksites, 30000);
+>>>>>>> origin/main
 
   const ncrOuvertes = hse?.kpi?.ncrOuvertes ?? null;
   const actionsRetard = hse?.actionsEnRetard ?? [];
@@ -35,6 +46,7 @@ export default function HomePage() {
   const ncrTotal = ncrData?.total ?? null;
   const ncrActives = ncrData?.items?.filter((n) => n.statut !== 'RESOLU' && n.statut !== 'CLOTURE').length ?? null;
   const chantiersCount = chantiers?.length ?? null;
+<<<<<<< HEAD
   const chantierActif = chantiers?.find((c) => c.nom === worksite?.name || c.id === worksite?.id) ?? null;
 
   const valeur = (n: number | null, suffixe = '') => (n === null ? '—' : `${n}${suffixe}`);
@@ -152,6 +164,11 @@ export default function HomePage() {
   /* ------------------------------------------------------------------ */
   /*  Dashboard QSE / DT / ADMIN — pilotage                             */
   /* ------------------------------------------------------------------ */
+=======
+
+  const valeur = (n: number | null, suffixe = '') => (n === null ? '—' : `${n}${suffixe}`);
+
+>>>>>>> origin/main
   return (
     <DashboardShell title="Tableau de Bord">
       {/* KPI */}
@@ -201,6 +218,10 @@ export default function HomePage() {
 
       {/* Contenu principal */}
       <div className="dashboard-grid">
+<<<<<<< HEAD
+=======
+        {/* Activité récente */}
+>>>>>>> origin/main
         <div className="panel">
           <div className="toolbar" style={{ marginBottom: 10 }}>
             <h3 style={{ margin: 0 }}>Activité récente</h3>
@@ -228,6 +249,7 @@ export default function HomePage() {
           )}
         </div>
 
+<<<<<<< HEAD
         <div className="panel">
           <h3 style={{ margin: '0 0 12px' }}>Accès rapides</h3>
           <div className="quick-links">
@@ -239,6 +261,24 @@ export default function HomePage() {
             )}
             <Link href="/chantiers" className="cta-link">Gérer les chantiers</Link>
             {canListNcr && <Link href="/ncr" className="cta-link">Liste des NCR</Link>}
+=======
+        {/* Raccourcis */}
+        <div className="panel">
+          <h3 style={{ margin: '0 0 12px' }}>Accès rapides</h3>
+          <div className="quick-links">
+            <Link href="/ncr/nouveau" className="cta-link">
+              Déclarer une NCR
+            </Link>
+            <Link href="/chantiers/nouveau" className="cta-link">
+              Nouveau chantier
+            </Link>
+            <Link href="/chantiers" className="cta-link">
+              Gérer les chantiers
+            </Link>
+            <Link href="/ncr" className="cta-link">
+              Liste des NCR
+            </Link>
+>>>>>>> origin/main
           </div>
         </div>
       </div>

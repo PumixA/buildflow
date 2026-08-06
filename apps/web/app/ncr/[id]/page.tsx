@@ -2,14 +2,20 @@
 
 import Link from 'next/link';
 import { use, useEffect, useRef, useState } from 'react';
+<<<<<<< HEAD
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+=======
+>>>>>>> origin/main
 import { NcrStatusDot, PriorityBadge, WormBadge } from '../../../components/badges';
 import { DashboardShell } from '../../../components/dashboard-shell';
 import { PhotoPreuve } from '../../../components/photo-preuve';
 import { fetchNcrDetail } from '../../../lib/api';
+<<<<<<< HEAD
 import { useAuth } from '../../../lib/auth';
 import { peutEditerNcr } from '../../../lib/roles';
+=======
+>>>>>>> origin/main
 import { usePoll } from '../../../lib/use-poll';
 
 /* ------------------------------------------------------------------ */
@@ -26,6 +32,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function MiniMap({ lat, lng }: { lat: number; lng: number }) {
   const mapRef = useRef<HTMLDivElement>(null);
+<<<<<<< HEAD
   const mapInst = useRef<L.Map | null>(null);
   const markerInst = useRef<L.Marker | null>(null);
   const [ready, setReady] = useState(false);
@@ -49,6 +56,57 @@ function MiniMap({ lat, lng }: { lat: number; lng: number }) {
     const marker = L.marker([lat, lng]).addTo(mapInst.current!);
     markerInst.current = marker;
     mapInst.current.setView([lat, lng], mapInst.current.getZoom());
+=======
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInst = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerInst = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function boot() {
+      if (!document.querySelector('link[data-leaflet]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.setAttribute('data-leaflet', '1');
+        document.head.appendChild(link);
+      }
+      if (!window.L) {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          s.onload = () => resolve();
+          s.onerror = () => reject();
+          document.head.appendChild(s);
+        });
+      }
+      if (cancelled || !mapRef.current) return;
+
+      const L = window.L;
+      if (!mapInst.current) {
+        const map = L.map(mapRef.current, { zoomControl: false, dragging: false, scrollWheelZoom: false })
+          .setView([lat, lng], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: 'OSM', subdomains: 'abcd', maxZoom: 19
+        }).addTo(map);
+        mapInst.current = map;
+        setReady(true);
+      }
+
+      if (markerInst.current) {
+        mapInst.current.removeLayer(markerInst.current);
+      }
+      const marker = L.marker([lat, lng]).addTo(mapInst.current);
+      markerInst.current = marker;
+      mapInst.current.setView([lat, lng], mapInst.current.getZoom());
+    }
+
+    boot();
+    return () => { cancelled = true; };
+>>>>>>> origin/main
   }, [lat, lng]);
 
   return <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 160, borderRadius: 10 }}>
@@ -64,7 +122,10 @@ type Props = { params: Promise<{ id: string }> };
 
 export default function NcrDetailPage({ params }: Props) {
   const { id } = use(params);
+<<<<<<< HEAD
   const { role } = useAuth();
+=======
+>>>>>>> origin/main
   const { data: detail, loading } = usePoll(() => fetchNcrDetail(id));
   const [lightbox, setLightbox] = useState<string | null>(null);
 
@@ -107,11 +168,17 @@ export default function NcrDetailPage({ params }: Props) {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+<<<<<<< HEAD
             {peutEditerNcr(role) && (
               <Link href={`/ncr/${id}/edit`} className="filter-button" style={{ textDecoration: 'none' }}>
                 Modifier
               </Link>
             )}
+=======
+            <Link href={`/ncr/${id}/edit`} className="filter-button" style={{ textDecoration: 'none' }}>
+              Modifier
+            </Link>
+>>>>>>> origin/main
             <Link href="/ncr" className="action-link" style={{ alignSelf: 'center' }}>← Retour</Link>
           </div>
         </div>

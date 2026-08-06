@@ -7,7 +7,10 @@ import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { DashboardShell } from '../../../../components/dashboard-shell';
 import { fetchNcrDetail, updateNcr, setNcrStatus, addNcrPhoto } from '../../../../lib/api';
 import { useAuth } from '../../../../lib/auth';
+<<<<<<< HEAD
 import { peutEditerNcr } from '../../../../lib/roles';
+=======
+>>>>>>> origin/main
 import { usePoll } from '../../../../lib/use-poll';
 
 const LocationPicker = dynamic(() => import('../../../../components/location-picker'), {
@@ -39,7 +42,11 @@ type Props = { params: Promise<{ id: string }> };
 export default function EditNcrPage({ params }: Props) {
   const { id } = React.use(params);
   const router = useRouter();
+<<<<<<< HEAD
   const { email, role } = useAuth();
+=======
+  const { email } = useAuth();
+>>>>>>> origin/main
   const { data: detail, loading } = usePoll(() => fetchNcrDetail(id));
 
   const [titre, setTitre] = useState('');
@@ -125,6 +132,7 @@ export default function EditNcrPage({ params }: Props) {
 
   const complet = titre.trim() && description.trim();
 
+<<<<<<< HEAD
   if (!peutEditerNcr(role)) {
     return (
       <DashboardShell title="Accès refusé">
@@ -137,6 +145,8 @@ export default function EditNcrPage({ params }: Props) {
     );
   }
 
+=======
+>>>>>>> origin/main
   return (
     <DashboardShell title="Modifier NCR">
       <section className="panel">
@@ -196,6 +206,7 @@ export default function EditNcrPage({ params }: Props) {
             </span>
           </label>
 
+<<<<<<< HEAD
           {!complet && (
             <div style={{
               background: 'rgba(245,159,36,0.1)', border: '1px solid rgba(245,159,36,0.35)',
@@ -209,6 +220,8 @@ export default function EditNcrPage({ params }: Props) {
             </div>
           )}
 
+=======
+>>>>>>> origin/main
           <button type="submit" className="filter-button" disabled={envoi || !complet}
             style={{ width: '100%', minHeight: 42, fontSize: 15, fontWeight: 600 }}>
             {envoi ? 'Enregistrement...' : 'Enregistrer les modifications'}

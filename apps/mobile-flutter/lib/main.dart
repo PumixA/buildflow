@@ -8,7 +8,10 @@ import 'screens/ncr_create_screen.dart';
 import 'screens/sync_screen.dart';
 import 'services/auth_service.dart';
 import 'services/local_store.dart';
+<<<<<<< HEAD
 import 'services/roles.dart';
+=======
+>>>>>>> origin/main
 import 'services/sync_api.dart';
 
 /* ------------------------------------------------------------------ */
@@ -173,6 +176,7 @@ class _BuildFlowMobileAppState extends State<BuildFlowMobileApp> {
       const SyncScreen(),
     ];
 
+<<<<<<< HEAD
     final role = AuthService.instance.role;
     final showCreate = peutCreerNcr(role);
 
@@ -195,12 +199,34 @@ class _BuildFlowMobileAppState extends State<BuildFlowMobileApp> {
       ),
     ];
 
+=======
+>>>>>>> origin/main
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
+<<<<<<< HEAD
         items: items,
+=======
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Accueil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle_outline),
+            activeIcon: Icon(Icons.add_circle),
+            label: 'Nouveau',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sync_outlined),
+            activeIcon: Icon(Icons.sync),
+            label: 'Sync',
+          ),
+        ],
+>>>>>>> origin/main
       ),
     );
   }

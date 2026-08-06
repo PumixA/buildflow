@@ -6,8 +6,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NcrStatusDot } from '../../components/badges';
 import { DashboardShell } from '../../components/dashboard-shell';
 import { fetchNcrList } from '../../lib/api';
+<<<<<<< HEAD
 import { useAuth } from '../../lib/auth';
 import { peutListerNcr } from '../../lib/roles';
+=======
+>>>>>>> origin/main
 import { usePoll } from '../../lib/use-poll';
 import { useWorksite } from '../../lib/worksite';
 
@@ -15,7 +18,10 @@ const PAR_PAGE = 12;
 
 export default function NcrListPage() {
   const router = useRouter();
+<<<<<<< HEAD
   const { role } = useAuth();
+=======
+>>>>>>> origin/main
   const [query, setQuery] = useState('');
   const [statut, setStatut] = useState('all');
   const [priorite, setPriorite] = useState('all');
@@ -24,6 +30,7 @@ export default function NcrListPage() {
   const [page, setPage] = useState(1);
   const { worksite } = useWorksite();
 
+<<<<<<< HEAD
   // Le chef de chantier n'a pas accès à la liste des NCR
   if (!peutListerNcr(role)) {
     router.replace('/');
@@ -38,6 +45,8 @@ export default function NcrListPage() {
     );
   }
 
+=======
+>>>>>>> origin/main
   const charger = useCallback(() => fetchNcrList(worksite?.name), [worksite?.name]);
   const { data, loading, lastUpdate } = usePoll(charger, undefined, worksite?.name ?? 'all');
   const rows = data?.items ?? [];
