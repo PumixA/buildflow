@@ -134,12 +134,13 @@ a {
   cursor: default;
 }
 
-.menu-icon {
-  font-size: 18px;
+.menu-icon-svg {
   flex-shrink: 0;
-  width: 24px;
-  text-align: center;
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
 }
+.menu-link:hover .menu-icon-svg { opacity: 1; }
 
 .app-content {
   padding: 20px;

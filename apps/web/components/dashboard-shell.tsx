@@ -11,12 +11,19 @@ type DashboardShellProps = {
   children: ReactNode;
 };
 
-const ICONS: Record<string, string> = {
-  chantiers: '🏗',
-  hse: '🛡',
-  ncr: '📋',
-  nouveau: '➕',
-};
+function Icon({ name }: { name: string }) {
+  const d: Record<string, string> = {
+    chantiers: 'M3 3h18v4H3V3zm0 6h18v4H3V9zm0 6h18v4H3v-4z',
+    hse: 'M12 2l8 4v4c0 6-4 10-8 12-4-2-8-6-8-12V6l8-4zm0 2.3L6 7v3c0 4.5 3 7.8 6 9.4 3-1.6 6-4.9 6-9.4V7l-6-2.7z',
+    ncr: 'M4 4h16v2H4V4zm0 5h16v2H4V9zm0 5h10v2H4v-2z',
+    nouveau: 'M12 2v8m0 0v8m0-8h8m-8 0H4',
+  };
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="menu-icon-svg">
+      <path d={d[name] ?? d.nouveau} />
+    </svg>
+  );
+}
 
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, role, logout } = useAuth();
@@ -44,23 +51,23 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
 
         <nav className="menu-group">
           <Link href="/chantiers" className="menu-link" title="Chantiers">
-            <span className="menu-icon">{ICONS.chantiers}</span>
+            <Icon name="chantiers" />
             {!collapsed && <span>Chantiers</span>}
           </Link>
           {canList && (
             <Link href="/hse" className="menu-link" title="HSE">
-              <span className="menu-icon">{ICONS.hse}</span>
+              <Icon name="hse" />
               {!collapsed && <span>Tableau de Bord HSE</span>}
             </Link>
           )}
           {canList && (
             <Link href="/ncr" className="menu-link" title="NCR">
-              <span className="menu-icon">{ICONS.ncr}</span>
+              <Icon name="ncr" />
               {!collapsed && <span>Liste des NCR</span>}
             </Link>
           )}
           <Link href="/ncr/nouveau" className="menu-link" title="Nouvelle NCR">
-            <span className="menu-icon">{ICONS.nouveau}</span>
+            <Icon name="nouveau" />
             {!collapsed && <span>Nouvelle NCR</span>}
           </Link>
         </nav>
