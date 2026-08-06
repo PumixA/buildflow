@@ -29,12 +29,11 @@ function NavLink({ href, icon, label, active }: { href: string; icon: string; la
       title={label}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ '--tx': `${tilt.x}px`, '--ty': `${tilt.y}px` } as React.CSSProperties}
     >
-      <span className="nav-icon-wrap" style={{ transform: `translate(${tilt.x * 1.5}px, ${tilt.y * 1.5}px)` }}>
+      <span className="nav-icon-wrap" style={{ transform: `translate(${tilt.x * 2}px, ${tilt.y * 2}px)` }}>
         <NavSvg name={icon} label={label} />
+        <span className="nav-label">{label}</span>
       </span>
-      <span>{label}</span>
     </Link>
   );
 }
