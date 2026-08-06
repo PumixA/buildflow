@@ -873,6 +873,16 @@ a {
   gap: 12px;
 }
 
+.user-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 3px 3px 3px 8px;
+}
+
 .user-badge {
   display: flex;
   align-items: center;
