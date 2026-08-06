@@ -1,155 +1,109 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useCallback, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DashboardShell } from '../../components/dashboard-shell';
-import { createWorksite, fetchWorksites } from '../../lib/api';
+import { fetchWorksites } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { usePoll } from '../../lib/use-poll';
 import { useWorksite } from '../../lib/worksite';
 
-/** Seuls ces rôles peuvent ouvrir un chantier — l'API applique la même règle. */
 const ROLES_OUVERTURE = ['DIRECTION_TRAVAUX', 'ADMIN'];
+const STATUTS = [
+  { valeur: 'all', libelle: 'Tous les statuts' },
+  { valeur: 'ACTIVE', libelle: 'Actif' },
+  { valeur: 'SUSPENDED', libelle: 'Suspendu' },
+  { valeur: 'CLOSED', libelle: 'Clôturé' }
+];
 
 export default function ChantiersPage() {
   const router = useRouter();
-  const { email, role } = useAuth();
+  const { role } = useAuth();
   const { worksite, openWorksite } = useWorksite();
 
   const { data, loading, lastUpdate } = usePoll(fetchWorksites);
   const chantiers = data ?? [];
 
-  const [nom, setNom] = useState('');
-  const [localisation, setLocalisation] = useState('');
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [envoi, setEnvoi] = useState(false);
-  const [formulaireOuvert, setFormulaireOuvert] = useState(false);
+  const [query, setQuery] = useState('');
+  const [statut, setStatut] = useState('all');
 
-  // SSR : afficher par défaut, le client corrige après chargement du rôle
-  const peutCreer = !role || ROLES_OUVERTURE.includes(role);
-
-  const ouvrir = useCallback(
-    (id: string, nomChantier: string) => {
-      openWorksite({ id, name: nomChantier });
-      router.push('/ncr');
-    },
-    [openWorksite, router]
+  const filteredChantiers = useMemo(
+    () =>
+      chantiers.filter((chantier) => {
+        if (query && !`${chantier.nom} ${chantier.localisation ?? ''}`.toLowerCase().includes(query.toLowerCase())) return false;
+        if (statut !== 'all' && chantier.statut !== statut) return false;
+        return true;
+      }),
+    [chantiers, query, statut]
   );
 
-  const soumettre = async (event: FormEvent) => {
-    event.preventDefault();
-    setErreur(null);
-    setEnvoi(true);
-    try {
-      const cree = await createWorksite({
-        name: nom.trim(),
-        locationGps: localisation.trim() || undefined,
-        actorId: email ?? 'INCONNU'
-      });
-      setNom('');
-      setLocalisation('');
-      setFormulaireOuvert(false);
-      // On enchaîne sur le chantier qui vient d'être ouvert : c'est ce que
-      // l'utilisateur veut faire ensuite dans tous les cas.
-      ouvrir(cree.id, cree.nom);
-    } catch (err) {
-      setErreur((err as Error).message);
-    } finally {
-      setEnvoi(false);
-    }
-  };
+  const peutCreer = !role || ROLES_OUVERTURE.includes(role);
 
   return (
     <DashboardShell title="Chantiers">
       <section className="panel">
         <div className="toolbar">
-          <div>
-            <h2 style={{ margin: 0 }}>Sélectionner un chantier</h2>
-            <p className="toolbar-meta">
-              Le chantier ouvert filtre les NCR et pré-remplit les saisies.
-            </p>
-          </div>
           <div className="filters">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher un chantier..."
+              className="filter-input"
+            />
+            <select value={statut} onChange={(e) => setStatut(e.target.value)} className="filter-select">
+              {STATUTS.map((s) => (
+                <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+              ))}
+            </select>
             {peutCreer && (
-              <button
-                type="button"
-                className="filter-button"
-                onClick={() => setFormulaireOuvert((ouvert) => !ouvert)}
-              >
-                {formulaireOuvert ? 'Annuler' : '+ Nouveau chantier'}
-              </button>
+              <Link href="/chantiers/nouveau" className="filter-button">+ Nouveau chantier</Link>
             )}
-            <p className="toolbar-meta">
-              {loading
-                ? 'Chargement...'
-                : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}${
-                    lastUpdate ? ` — maj ${lastUpdate.toLocaleTimeString('fr-FR')}` : ''
-                  }`}
-            </p>
           </div>
+          <p className="toolbar-meta">
+            {loading
+              ? 'Chargement...'
+              : `${filteredChantiers.length} chantier${filteredChantiers.length !== 1 ? 's' : ''}${
+                  query || statut !== 'all'
+                    ? ` filtré${filteredChantiers.length !== 1 ? 's' : ''} sur ${chantiers.length}`
+                    : ''
+                }${
+                  lastUpdate ? ` — maj ${lastUpdate.toLocaleTimeString('fr-FR')}` : ''
+                }`}
+          </p>
         </div>
 
-        {formulaireOuvert && peutCreer && (
-          <form onSubmit={soumettre} className="worksite-form">
-            {erreur && <p className="form-error">{erreur}</p>}
-            <label>
-              Nom du chantier
-              <input
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
-                placeholder="Paris - La Défense T4"
-                maxLength={160}
-                required
-              />
-            </label>
-            <label>
-              Localisation (optionnel)
-              <input
-                value={localisation}
-                onChange={(e) => setLocalisation(e.target.value)}
-                placeholder="48.8566, 2.3522"
-                maxLength={120}
-              />
-            </label>
-            <button type="submit" className="filter-button" disabled={envoi || !nom.trim()}>
-              {envoi ? 'Ouverture...' : 'Ouvrir le chantier'}
-            </button>
-          </form>
-        )}
-
         <div className="worksite-grid">
-          {chantiers.map((chantier) => {
+          {filteredChantiers.map((chantier) => {
             const actif = worksite?.id === chantier.id;
             return (
-              <article key={chantier.id} className={`worksite-card${actif ? ' active' : ''}`}>
-                <header>
-                  <h3>{chantier.nom}</h3>
-                  <span className={`badge status-${chantier.statut === 'ACTIVE' ? 'resolu' : 'ouvert'}`}>
-                    {chantier.statut}
-                  </span>
-                </header>
-                <p className="worksite-meta">{chantier.localisation || 'Localisation non renseignée'}</p>
-                <p className="worksite-meta">
-                  <strong>{chantier.ncrOuvertes}</strong> NCR ouverte
-                  {chantier.ncrOuvertes > 1 ? 's' : ''} sur {chantier.ncrTotal} — ouvert le{' '}
-                  {chantier.dateOuverture}
-                </p>
-                <button
-                  type="button"
-                  className="filter-button"
-                  onClick={() => ouvrir(chantier.id, chantier.nom)}
-                >
-                  {actif ? 'Rouvrir' : 'Ouvrir'}
-                </button>
+              <article key={chantier.id} className={`worksite-card${actif ? ' active' : ''}`}
+                onClick={() => { openWorksite({ id: chantier.id, name: chantier.nom }); router.push('/ncr'); }}>
+                <div className="ws-card-body">
+                  <div className="ws-card-top">
+                    <h3>
+                      {actif && <span className="ws-dot" />}
+                      {chantier.nom}
+                    </h3>
+                    <Link href={`/chantiers/${chantier.id}`} className="ws-edit-btn" title="Modifier"
+                      onClick={(e) => e.stopPropagation()}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </Link>
+                  </div>
+                  <p className="worksite-meta">{chantier.localisation || 'Sans localisation'}</p>
+                  <div className="ws-card-stats">
+                    <span><strong>{chantier.ncrOuvertes}</strong> NCR ouvertes</span>
+                    <span>sur <strong>{chantier.ncrTotal}</strong></span>
+                    <span>depuis {chantier.dateOuverture}</span>
+                  </div>
+                </div>
               </article>
             );
           })}
-          {!loading && chantiers.length === 0 && (
-            <p className="toolbar-meta">
-              Aucun chantier enregistré.
-              {peutCreer
-                ? ' Utilisez « Nouveau chantier » pour en ouvrir un.'
-                : " Demandez à la direction des travaux d'en ouvrir un."}
+          {!loading && filteredChantiers.length === 0 && (
+            <p className="toolbar-meta" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40 }}>
+              {chantiers.length === 0 ? 'Aucun chantier enregistré.' : 'Aucun chantier ne correspond aux critères.'}
             </p>
           )}
         </div>

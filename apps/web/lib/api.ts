@@ -155,6 +155,11 @@ export async function fetchWorksites(): Promise<Worksite[]> {
   return (res?.items ?? []).map(toWorksite);
 }
 
+export async function fetchWorksite(id: string): Promise<Worksite | null> {
+  const project = await safeJson<BackendProject>(`/projects/${encodeURIComponent(id)}`);
+  return project ? toWorksite(project) : null;
+}
+
 export async function createWorksite(input: {
   name: string;
   locationGps?: string;
@@ -162,6 +167,30 @@ export async function createWorksite(input: {
 }): Promise<Worksite> {
   const created = await postJson<BackendProject>('/projects', input);
   return toWorksite(created);
+}
+
+async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string | string[] } | null;
+    const message = Array.isArray(payload?.message) ? payload?.message.join(', ') : payload?.message;
+    throw new Error(message || `Échec de la requête (HTTP ${response.status})`);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function updateWorksite(
+  id: string,
+  input: { name?: string; locationGps?: string; actorId: string }
+): Promise<Worksite> {
+  const updated = await patchJson<BackendProject>(`/projects/${encodeURIComponent(id)}`, input);
+  return toWorksite(updated);
 }
 
 export type CreateNcrInput = {
@@ -178,6 +207,26 @@ export type CreateNcrInput = {
 
 export async function createNcr(input: CreateNcrInput): Promise<{ id: string }> {
   return postJson<{ id: string }>('/ncr', input);
+}
+
+export async function updateNcr(
+  id: string,
+  input: { title?: string; description?: string; priority?: string }
+): Promise<void> {
+  await patchJson(`/ncr/${encodeURIComponent(id)}`, input);
+}
+
+export async function setNcrStatus(
+  id: string,
+  status: string,
+  actorId: string,
+  comment?: string
+): Promise<void> {
+  await patchJson(`/ncr/${encodeURIComponent(id)}/status`, { status, actorId, comment });
+}
+
+export async function addNcrPhoto(id: string, data: string): Promise<void> {
+  await postJson(`/ncr/${encodeURIComponent(id)}/photo`, { data });
 }
 
 /** Plafond accepté par l'API : le contrôleur borne `limit` à 100. */

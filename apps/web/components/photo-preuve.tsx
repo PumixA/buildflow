@@ -13,7 +13,7 @@ import { PhotoPreuve as PhotoPreuveType } from '../lib/types';
  * Le contenu est récupéré par `fetch` avec le jeton de session : l'endpoint est
  * protégé, et un `<img src>` ne sait pas porter d'en-tête d'autorisation.
  */
-export function PhotoPreuve({ ncrId, photo }: { ncrId: string; photo: PhotoPreuveType }) {
+export function PhotoPreuve({ ncrId, photo, onPhotoUrl }: { ncrId: string; photo: PhotoPreuveType; onPhotoUrl?: (url: string) => void }) {
   const [url, setUrl] = useState<string | null>(null);
   const [echec, setEchec] = useState(false);
 
@@ -44,10 +44,10 @@ export function PhotoPreuve({ ncrId, photo }: { ncrId: string; photo: PhotoPreuv
   }, [ncrId, photo.id]);
 
   return (
-    <figure className="proof-card proof-photo">
+    <figure className="proof-card proof-photo"
+      onClick={() => url && onPhotoUrl?.(url)}
+      style={onPhotoUrl && url ? { cursor: 'pointer' } : undefined}>
       {url ? (
-        // `next/image` optimise depuis une URL distante connue à la compilation ;
-        // ici la source est un blob créé à l'exécution, donc une balise native.
         <img src={url} alt={`Preuve photographique du ${photo.date}`} />
       ) : (
         <span>{echec ? 'Contenu indisponible' : 'Chargement…'}</span>

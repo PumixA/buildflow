@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
-import { CreateProjectDto } from './dto/project.dto';
+import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { Project, ProjectsService } from './projects.service';
 
 @Controller('projects')
@@ -29,5 +29,11 @@ export class ProjectsController {
   @Roles('DIRECTION_TRAVAUX', 'ADMIN')
   create(@Body() payload: CreateProjectDto): Promise<Project> {
     return this.projectsService.create(payload, payload.actorId);
+  }
+
+  @Patch(':projectId')
+  @Roles('DIRECTION_TRAVAUX', 'ADMIN')
+  update(@Param('projectId') projectId: string, @Body() payload: UpdateProjectDto): Promise<Project> {
+    return this.projectsService.update(projectId, payload, payload.actorId);
   }
 }
