@@ -22,12 +22,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 function MiniMap({ lat, lng }: { lat: number; lng: number }) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const initRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInst = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerInst = useRef<any>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (initRef.current || !mapRef.current) return;
-    initRef.current = true;
-
     let cancelled = false;
 
     async function boot() {
@@ -50,19 +51,31 @@ function MiniMap({ lat, lng }: { lat: number; lng: number }) {
       if (cancelled || !mapRef.current) return;
 
       const L = window.L;
-      const map = L.map(mapRef.current, { zoomControl: false, dragging: false, scrollWheelZoom: false })
-        .setView([lat, lng], 15);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: 'OSM', subdomains: 'abcd', maxZoom: 19
-      }).addTo(map);
-      L.marker([lat, lng]).addTo(map);
+      if (!mapInst.current) {
+        const map = L.map(mapRef.current, { zoomControl: false, dragging: false, scrollWheelZoom: false })
+          .setView([lat, lng], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: 'OSM', subdomains: 'abcd', maxZoom: 19
+        }).addTo(map);
+        mapInst.current = map;
+        setReady(true);
+      }
+
+      if (markerInst.current) {
+        mapInst.current.removeLayer(markerInst.current);
+      }
+      const marker = L.marker([lat, lng]).addTo(mapInst.current);
+      markerInst.current = marker;
+      mapInst.current.setView([lat, lng], mapInst.current.getZoom());
     }
 
     boot();
     return () => { cancelled = true; };
   }, [lat, lng]);
 
-  return <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 160, borderRadius: 10 }} />;
+  return <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: 160, borderRadius: 10 }}>
+    {!ready && <span className="field-hint" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>...</span>}
+  </div>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -176,7 +189,7 @@ export default function NcrDetailPage({ params }: Props) {
                       <figcaption>Photo {idx + 1} — cliquer pour agrandir</figcaption>
                     </figure>
                   ) : (
-                    <PhotoPreuve key={photo.id} ncrId={detail.id} photo={photo} />
+                    <PhotoPreuve key={photo.id} ncrId={detail.id} photo={photo} onPhotoUrl={(url) => setLightbox(url)} />
                   )
                 )}
               </div>
