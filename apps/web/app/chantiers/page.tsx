@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { DashboardShell } from '../../components/dashboard-shell';
 import { fetchWorksites } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -9,14 +10,33 @@ import { usePoll } from '../../lib/use-poll';
 import { useWorksite } from '../../lib/worksite';
 
 const ROLES_OUVERTURE = ['DIRECTION_TRAVAUX', 'ADMIN'];
+const STATUTS = [
+  { valeur: 'all', libelle: 'Tous les statuts' },
+  { valeur: 'ACTIVE', libelle: 'Actif' },
+  { valeur: 'SUSPENDED', libelle: 'Suspendu' },
+  { valeur: 'CLOSED', libelle: 'Clôturé' }
+];
 
 export default function ChantiersPage() {
   const router = useRouter();
-  const { email, role } = useAuth();
+  const { role } = useAuth();
   const { worksite, openWorksite } = useWorksite();
 
   const { data, loading, lastUpdate } = usePoll(fetchWorksites);
   const chantiers = data ?? [];
+
+  const [query, setQuery] = useState('');
+  const [statut, setStatut] = useState('all');
+
+  const filteredChantiers = useMemo(
+    () =>
+      chantiers.filter((chantier) => {
+        if (query && !`${chantier.nom} ${chantier.localisation ?? ''}`.toLowerCase().includes(query.toLowerCase())) return false;
+        if (statut !== 'all' && chantier.statut !== statut) return false;
+        return true;
+      }),
+    [chantiers, query, statut]
+  );
 
   const peutCreer = !role || ROLES_OUVERTURE.includes(role);
 
@@ -24,23 +44,38 @@ export default function ChantiersPage() {
     <DashboardShell title="Chantiers">
       <section className="panel">
         <div className="toolbar">
-          <div>
-            <h2 style={{ margin: 0 }}>Sélectionner un chantier</h2>
-            <p className="toolbar-meta">
-              {loading
-                ? 'Chargement...'
-                : `${chantiers.length} chantier${chantiers.length > 1 ? 's' : ''}${
-                    lastUpdate ? ` — maj ${lastUpdate.toLocaleTimeString('fr-FR')}` : ''
-                  }`}
-            </p>
+          <div className="filters">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher un chantier..."
+              className="filter-input"
+            />
+            <select value={statut} onChange={(e) => setStatut(e.target.value)} className="filter-select">
+              {STATUTS.map((s) => (
+                <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+              ))}
+            </select>
+            {peutCreer && (
+              <Link href="/chantiers/nouveau" className="filter-button">+ Nouveau chantier</Link>
+            )}
           </div>
-          {peutCreer && (
-            <Link href="/chantiers/nouveau" className="filter-button">+ Nouveau chantier</Link>
-          )}
+          <p className="toolbar-meta">
+            {loading
+              ? 'Chargement...'
+              : `${filteredChantiers.length} chantier${filteredChantiers.length !== 1 ? 's' : ''}${
+                  query || statut !== 'all'
+                    ? ` filtré${filteredChantiers.length !== 1 ? 's' : ''} sur ${chantiers.length}`
+                    : ''
+                }${
+                  lastUpdate ? ` — maj ${lastUpdate.toLocaleTimeString('fr-FR')}` : ''
+                }`}
+          </p>
         </div>
 
         <div className="worksite-grid">
-          {chantiers.map((chantier) => {
+          {filteredChantiers.map((chantier) => {
             const actif = worksite?.id === chantier.id;
             return (
               <article key={chantier.id} className={`worksite-card${actif ? ' active' : ''}`}
@@ -66,9 +101,9 @@ export default function ChantiersPage() {
               </article>
             );
           })}
-          {!loading && chantiers.length === 0 && (
+          {!loading && filteredChantiers.length === 0 && (
             <p className="toolbar-meta" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40 }}>
-              Aucun chantier enregistré.
+              {chantiers.length === 0 ? 'Aucun chantier enregistré.' : 'Aucun chantier ne correspond aux critères.'}
             </p>
           )}
         </div>

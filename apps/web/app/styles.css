@@ -256,6 +256,7 @@ a {
   color: var(--text);
   border-radius: 8px;
   padding: 8px 10px;
+  text-decoration: none;
   min-height: 38px;
 }
 
@@ -266,6 +267,7 @@ a {
 .filter-button {
   background: #133969;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .table {
@@ -686,6 +688,31 @@ a {
   cursor: not-allowed;
 }
 
+.field-input,
+.field-select,
+.field-textarea {
+  background: #0d1b30;
+  border: 1px solid #2a446c;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus {
+  border-color: var(--primary);
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
 .field-hint {
   color: var(--text-soft);
   font-size: 12px;
@@ -734,6 +761,67 @@ a {
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+/* ===== Location picker (Leaflet) ===== */
+.lp-root {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lp-search-bar .field-input {
+  min-width: 0;
+}
+
+.lp-results {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.lp-results li + li {
+  border-top: 1px solid var(--line);
+}
+
+.lp-results button {
+  width: 100%;
+  background: #0d1b30;
+  border: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lp-results button:hover {
+  background: #133969;
+}
+
+.lp-map {
+  height: 320px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.lp-map .leaflet-control-zoom a {
+  background: #0d1b30;
+  color: var(--text);
+  border-color: var(--line);
 }
 
 @media (max-width: 1200px) {
