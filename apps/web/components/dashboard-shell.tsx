@@ -11,7 +11,35 @@ type DashboardShellProps = {
   children: ReactNode;
 };
 
-function NavIcon({ name, label }: { name: string; label: string }) {
+function NavLink({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) / 8;
+    const y = (e.clientY - rect.top - rect.height / 2) / 8;
+    setTilt({ x, y });
+  };
+  const handleMouseLeave = () => setTilt({ x: 0, y: 0 });
+
+  return (
+    <Link
+      href={href}
+      className={`nav-item${active ? ' active' : ''}`}
+      title={label}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ '--tx': `${tilt.x}px`, '--ty': `${tilt.y}px` } as React.CSSProperties}
+    >
+      <span className="nav-icon-wrap" style={{ transform: `translate(${tilt.x * 1.5}px, ${tilt.y * 1.5}px)` }}>
+        <NavSvg name={icon} />
+      </span>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function NavSvg({ name }: { name: string }) {
   const paths: Record<string, string> = {
     home: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1',
     chantiers: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
@@ -65,30 +93,11 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
       </section>
 
       <nav className="bottom-nav">
-        <Link href="/" className={`nav-item${isActive('/') ? ' active' : ''}`} title="Tableau de bord">
-          <NavIcon name="home" label="Dashboard" />
-          <span>Accueil</span>
-        </Link>
-        <Link href="/chantiers" className={`nav-item${isActive('/chantiers') ? ' active' : ''}`} title="Chantiers">
-          <NavIcon name="chantiers" label="Chantiers" />
-          <span>Chantiers</span>
-        </Link>
-        {canList && (
-          <Link href="/hse" className={`nav-item${isActive('/hse') ? ' active' : ''}`} title="HSE">
-            <NavIcon name="hse" label="HSE" />
-            <span>HSE</span>
-          </Link>
-        )}
-        {canList && (
-          <Link href="/ncr" className={`nav-item${isActive('/ncr') ? ' active' : ''}`} title="NCR">
-            <NavIcon name="ncr" label="NCR" />
-            <span>NCR</span>
-          </Link>
-        )}
-        <Link href="/ncr/nouveau" className={`nav-item${isActive('/ncr/nouveau') ? ' active' : ''}`} title="Nouvelle NCR">
-          <NavIcon name="nouveau" label="Nouveau" />
-          <span>Nouveau</span>
-        </Link>
+        <NavLink href="/" icon="home" label="Accueil" active={isActive('/')} />
+        <NavLink href="/chantiers" icon="chantiers" label="Chantiers" active={isActive('/chantiers')} />
+        {canList && <NavLink href="/hse" icon="hse" label="HSE" active={isActive('/hse')} />}
+        {canList && <NavLink href="/ncr" icon="ncr" label="NCR" active={isActive('/ncr')} />}
+        <NavLink href="/ncr/nouveau" icon="nouveau" label="Nouveau" active={isActive('/ncr/nouveau')} />
       </nav>
     </main>
   );
