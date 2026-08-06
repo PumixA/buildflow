@@ -91,16 +91,17 @@ a {
 /* Bottom nav */
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  justify-content: center;
-  gap: 0;
-  background: rgba(10,20,36,0.92);
+  gap: 4px;
+  background: rgba(13,25,45,0.9);
   backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 6px 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   z-index: 10;
 }
 
