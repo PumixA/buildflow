@@ -39,7 +39,6 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
         </button>
 
         <Link href="/" className="brand">
-          <span className="brand-icon">▣</span>
           {!collapsed && <span>BuildFlow</span>}
         </Link>
 

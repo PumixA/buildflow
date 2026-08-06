@@ -60,7 +60,6 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <span className="brand-icon">▣</span>
           <h1>BuildFlow</h1>
           <p>Plateforme Qualité & Sécurité BTP</p>
         </div>
