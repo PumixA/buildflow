@@ -881,21 +881,18 @@ a {
   border-radius: 4px;
 }
 
-.topbar-right .btn-logout {
+.btn-logout {
   background: transparent;
-  border: 1px solid var(--line);
-  color: var(--sub);
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 12px;
+  border: 1px solid transparent;
+  color: #5e7da8;
+  padding: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
 }
-
-.topbar-right .btn-logout:hover {
-  border-color: #dc2626;
-  color: #fca5a5;
-}
+.btn-logout:hover { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
 
 /* Vignette de preuve : la carte contenait un simple libellé de fichier fictif. */
 .proof-photo {
