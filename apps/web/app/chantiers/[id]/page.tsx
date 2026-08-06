@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import ChantierForm from '../../../components/chantier-form';
 import { DashboardShell } from '../../../components/dashboard-shell';
 import { fetchWorksite } from '../../../lib/api';
+import { useAuth } from '../../../lib/auth';
+import { peutEditerChantier } from '../../../lib/roles';
 import type { Worksite } from '../../../lib/types';
 
 function parseGps(localisation: string | null): { lat: number; lng: number } | null {
@@ -20,6 +22,7 @@ function parseGps(localisation: string | null): { lat: number; lng: number } | n
 export default function ChantierDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const { role } = useAuth();
 
   const [chantier, setChantier] = useState<Worksite | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -57,6 +60,20 @@ export default function ChantierDetailPage() {
           <p className="toolbar-meta" style={{ padding: 40, textAlign: 'center' }}>
             Le chantier demandé n&apos;existe pas ou a été supprimé.
           </p>
+        </section>
+      </DashboardShell>
+    );
+  }
+
+  if (!peutEditerChantier(role)) {
+    return (
+      <DashboardShell title="Accès refusé">
+        <section className="panel" style={{ textAlign: 'center', padding: 40 }}>
+          <h2 style={{ margin: '0 0 12px' }}>Accès refusé</h2>
+          <p className="toolbar-meta">Votre rôle ({role ?? 'inconnu'}) ne permet pas de modifier un chantier.</p>
+          <Link href="/chantiers" className="action-link" style={{ marginTop: 16, display: 'inline-block' }}>
+            ← Retour à la liste
+          </Link>
         </section>
       </DashboardShell>
     );

@@ -1,36 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-
-/* ------------------------------------------------------------------ */
-/*  Minimal Leaflet types — on ne charge pas le paquet npm, le script */
-/*  et le CSS sont injectés depuis le CDN à l'init de la carte.       */
-/* ------------------------------------------------------------------ */
-
-interface LMarker {
-  setLatLng(latlng: LLatLng): LMarker;
-  addTo(map: LMap): LMarker;
-  on(event: string, fn: () => void): void;
-}
-interface LMap {
-  setView(center: [number, number], zoom: number): LMap;
-  on(event: string, fn: (e: { latlng: LLatLng }) => void): void;
-}
-interface LLatLng {
-  lat: number;
-  lng: number;
-}
-interface Leaflet {
-  map(el: HTMLElement, opts?: Record<string, unknown>): LMap;
-  tileLayer(url: string, opts?: Record<string, unknown>): { addTo(map: LMap): void };
-  marker(latlng: [number, number], opts?: Record<string, unknown>): LMarker;
-}
-
-declare global {
-  interface Window {
-    L: Leaflet;
-  }
-}
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 /* ------------------------------------------------------------------ */
 /*  Constantes                                                         */
@@ -38,8 +10,6 @@ declare global {
 
 const DEFAULT_LAT = 46.603354;
 const DEFAULT_LNG = 1.888334;
-const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-const LEAFLET_JS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 
 /* ------------------------------------------------------------------ */
 /*  Composant                                                          */
@@ -53,8 +23,8 @@ interface LocationPickerProps {
 
 export default function LocationPicker({ onChange, initialLat, initialLng }: LocationPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<LMap | null>(null);
-  const markerRef = useRef<LMarker | null>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [query, setQuery] = useState('');
@@ -63,70 +33,43 @@ export default function LocationPicker({ onChange, initialLat, initialLng }: Loc
   const [localizing, setLocalizing] = useState(false);
   const localizingRef = useRef(false);
   const [ready, setReady] = useState(false);
+  const initDone = useRef(false);
 
   /* Initialisation de la carte ------------------------------------ */
   useEffect(() => {
-    let cancelled = false;
+    if (initDone.current || !mapRef.current) return;
+    initDone.current = true;
 
-    async function boot() {
-      // Injecter le CSS Leaflet si pas déjà présent
-      if (!document.querySelector('link[data-leaflet]')) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = LEAFLET_CSS;
-        link.setAttribute('data-leaflet', '1');
-        document.head.appendChild(link);
-      }
+    const startLat = initialLat ?? DEFAULT_LAT;
+    const startLng = initialLng ?? DEFAULT_LNG;
 
-      // Charger le JS Leaflet si pas déjà présent
-      if (!window.L) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = LEAFLET_JS;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Impossible de charger la carte'));
-          document.head.appendChild(script);
-        });
-      }
+    const map = L.map(mapRef.current, { zoomControl: true })
+      .setView([startLat, startLng], initialLat ? 15 : 6);
 
-      if (cancelled || !mapRef.current || mapInstance.current) return;
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
 
-      const L = window.L;
-      const startLat = initialLat ?? DEFAULT_LAT;
-      const startLng = initialLng ?? DEFAULT_LNG;
+    const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
 
-      const map = L.map(mapRef.current, {
-        zoomControl: true
-      }).setView([startLat, startLng], initialLat ? 15 : 6);
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng();
+      onChangeRef.current({ lat: pos.lat, lng: pos.lng });
+    });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(map);
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      if (localizingRef.current) return;
+      marker.setLatLng(e.latlng);
+      onChangeRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
+    });
 
-      const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
+    mapInstance.current = map;
+    markerRef.current = marker;
+    setReady(true);
 
-      marker.on('dragend', () => {
-        const pos = (marker as unknown as { getLatLng(): LLatLng }).getLatLng();
-        onChangeRef.current({ lat: pos.lat, lng: pos.lng });
-      });
-
-      map.on('click', (e: { latlng: LLatLng }) => {
-        if (localizingRef.current) return;
-        marker.setLatLng(e.latlng);
-        onChangeRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
-      });
-
-      mapInstance.current = map;
-      markerRef.current = marker;
-      setReady(true);
-
-      onChangeRef.current({ lat: startLat, lng: startLng });
-    }
-
-    boot().catch(() => {});
-    return () => { cancelled = true; };
+    onChangeRef.current({ lat: startLat, lng: startLng });
   }, [initialLat, initialLng]);
 
   /* Géolocalisation navigateur ----------------------------------- */
