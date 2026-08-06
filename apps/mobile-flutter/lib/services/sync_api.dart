@@ -44,7 +44,7 @@ class SyncApi {
         Uri.parse('$_apiBaseUrl/ncr/$serverId/photo'),
         headers: {'Content-Type': 'application/json', ...auth},
         body: jsonEncode({
-          'actorId': 'USR-CHEF',
+          'actorId': AuthService.instance.email ?? 'mobile',
           'fileName': chemin.split('/').last,
           'contentType': 'image/jpeg',
           'payloadBase64': base64Encode(octets),

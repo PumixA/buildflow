@@ -7,6 +7,7 @@ import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { DashboardShell } from '../../../../components/dashboard-shell';
 import { fetchNcrDetail, updateNcr, setNcrStatus, addNcrPhoto } from '../../../../lib/api';
 import { useAuth } from '../../../../lib/auth';
+import { peutEditerNcr } from '../../../../lib/roles';
 import { usePoll } from '../../../../lib/use-poll';
 
 const LocationPicker = dynamic(() => import('../../../../components/location-picker'), {
@@ -38,7 +39,7 @@ type Props = { params: Promise<{ id: string }> };
 export default function EditNcrPage({ params }: Props) {
   const { id } = React.use(params);
   const router = useRouter();
-  const { email } = useAuth();
+  const { email, role } = useAuth();
   const { data: detail, loading } = usePoll(() => fetchNcrDetail(id));
 
   const [titre, setTitre] = useState('');
@@ -124,6 +125,18 @@ export default function EditNcrPage({ params }: Props) {
 
   const complet = titre.trim() && description.trim();
 
+  if (!peutEditerNcr(role)) {
+    return (
+      <DashboardShell title="Accès refusé">
+        <section className="panel" style={{ textAlign: 'center', padding: 40 }}>
+          <h2 style={{ margin: '0 0 12px' }}>Accès refusé</h2>
+          <p className="toolbar-meta">Votre rôle ({role ?? 'inconnu'}) ne permet pas de modifier une NCR.</p>
+          <Link href={`/ncr/${id}`} className="action-link" style={{ marginTop: 16, display: 'inline-block' }}>← Retour à la fiche</Link>
+        </section>
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell title="Modifier NCR">
       <section className="panel">
@@ -182,6 +195,19 @@ export default function EditNcrPage({ params }: Props) {
               Les photos existantes sont conservées.
             </span>
           </label>
+
+          {!complet && (
+            <div style={{
+              background: 'rgba(245,159,36,0.1)', border: '1px solid rgba(245,159,36,0.35)',
+              borderRadius: 8, padding: '10px 14px', fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 8
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59f24" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span style={{ color: '#fbbf24' }}>
+                Champs obligatoires manquants : <strong>{[!titre.trim() && 'Titre', !description.trim() && 'Description'].filter(Boolean).join(', ')}</strong>
+              </span>
+            </div>
+          )}
 
           <button type="submit" className="filter-button" disabled={envoi || !complet}
             style={{ width: '100%', minHeight: 42, fontSize: 15, fontWeight: 600 }}>
