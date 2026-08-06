@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { useWorksite } from '../lib/worksite';
@@ -32,7 +32,10 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
   const canList = !role || role === 'ADMIN' || role === 'RESPONSABLE_QSE' || role === 'DIRECTION_TRAVAUX';
   const { worksite } = useWorksite();
   const router = useRouter();
+  const pathname = usePathname();
   const [ready, setReady] = useState(false);
+
+  const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href));
 
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
@@ -62,27 +65,27 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
       </section>
 
       <nav className="bottom-nav">
-        <Link href="/" className="nav-item" title="Tableau de bord">
+        <Link href="/" className={`nav-item${isActive('/') ? ' active' : ''}`} title="Tableau de bord">
           <NavIcon name="home" label="Dashboard" />
           <span>Accueil</span>
         </Link>
-        <Link href="/chantiers" className="nav-item" title="Chantiers">
+        <Link href="/chantiers" className={`nav-item${isActive('/chantiers') ? ' active' : ''}`} title="Chantiers">
           <NavIcon name="chantiers" label="Chantiers" />
           <span>Chantiers</span>
         </Link>
         {canList && (
-          <Link href="/hse" className="nav-item" title="HSE">
+          <Link href="/hse" className={`nav-item${isActive('/hse') ? ' active' : ''}`} title="HSE">
             <NavIcon name="hse" label="HSE" />
             <span>HSE</span>
           </Link>
         )}
         {canList && (
-          <Link href="/ncr" className="nav-item" title="NCR">
+          <Link href="/ncr" className={`nav-item${isActive('/ncr') ? ' active' : ''}`} title="NCR">
             <NavIcon name="ncr" label="NCR" />
             <span>NCR</span>
           </Link>
         )}
-        <Link href="/ncr/nouveau" className="nav-item" title="Nouvelle NCR">
+        <Link href="/ncr/nouveau" className={`nav-item${isActive('/ncr/nouveau') ? ' active' : ''}`} title="Nouvelle NCR">
           <NavIcon name="nouveau" label="Nouveau" />
           <span>Nouveau</span>
         </Link>
