@@ -11,16 +11,18 @@ type DashboardShellProps = {
   children: ReactNode;
 };
 
-function Icon({ name }: { name: string }) {
-  const d: Record<string, string> = {
-    chantiers: 'M3 3h18v4H3V3zm0 6h18v4H3V9zm0 6h18v4H3v-4z',
-    hse: 'M12 2l8 4v4c0 6-4 10-8 12-4-2-8-6-8-12V6l8-4zm0 2.3L6 7v3c0 4.5 3 7.8 6 9.4 3-1.6 6-4.9 6-9.4V7l-6-2.7z',
-    ncr: 'M4 4h16v2H4V4zm0 5h16v2H4V9zm0 5h10v2H4v-2z',
-    nouveau: 'M12 2v8m0 0v8m0-8h8m-8 0H4',
+function NavIcon({ name, label }: { name: string; label: string }) {
+  const paths: Record<string, string> = {
+    home: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1',
+    chantiers: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
+    hse: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+    ncr: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+    nouveau: 'M12 4v16m8-8H4',
   };
+  const d = paths[name] ?? paths.nouveau;
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="menu-icon-svg">
-      <path d={d[name] ?? d.nouveau} />
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-label={label}>
+      <path d={d} />
     </svg>
   );
 }
@@ -31,7 +33,6 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
   const { worksite } = useWorksite();
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
@@ -40,57 +41,52 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
 
   return (
     <main className="app-shell" suppressHydrationWarning>
-      <aside className={`app-sidebar${collapsed ? ' collapsed' : ''}`}>
-        <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)} title={collapsed ? 'Ouvrir' : 'Fermer'}>
-          {collapsed ? '☰' : '✕'}
-        </button>
-
-        <Link href="/" className="brand">
-          {!collapsed && <span>BuildFlow</span>}
-        </Link>
-
-        <nav className="menu-group">
-          <Link href="/chantiers" className="menu-link" title="Chantiers">
-            <Icon name="chantiers" />
-            {!collapsed && <span>Chantiers</span>}
-          </Link>
-          {canList && (
-            <Link href="/hse" className="menu-link" title="HSE">
-              <Icon name="hse" />
-              {!collapsed && <span>Tableau de Bord HSE</span>}
-            </Link>
-          )}
-          {canList && (
-            <Link href="/ncr" className="menu-link" title="NCR">
-              <Icon name="ncr" />
-              {!collapsed && <span>Liste des NCR</span>}
-            </Link>
-          )}
-          <Link href="/ncr/nouveau" className="menu-link" title="Nouvelle NCR">
-            <Icon name="nouveau" />
-            {!collapsed && <span>Nouvelle NCR</span>}
-          </Link>
-        </nav>
-      </aside>
+      <header className="top-header">
+        <Link href="/" className="header-brand">BuildFlow</Link>
+        <div className="header-right">
+          <p className="worksite-info">
+            {worksite ? (
+              <Link href="/chantiers"><strong>{worksite.name}</strong></Link>
+            ) : (
+              <Link href="/chantiers">aucun chantier</Link>
+            )}
+          </p>
+          {ready && email && <span className="user-email">{email}</span>}
+          {ready && <button onClick={logout} className="btn-logout">Déconnexion</button>}
+        </div>
+      </header>
 
       <section className="app-content">
-        <header className="topbar">
-          <h1>{title}</h1>
-          <div className="topbar-right">
-            <p>
-              Chantier actif:{' '}
-              {worksite ? (
-                <Link href="/chantiers" className="action-link"><strong>{worksite.name}</strong></Link>
-              ) : (
-                <Link href="/chantiers" className="action-link">aucun — en ouvrir un</Link>
-              )}
-            </p>
-            {ready && email && <span className="user-email">{email}</span>}
-            {ready && <button onClick={logout} className="btn-logout">Déconnexion</button>}
-          </div>
-        </header>
+        <h1 className="page-title">{title}</h1>
         {children}
       </section>
+
+      <nav className="bottom-nav">
+        <Link href="/" className="nav-item" title="Tableau de bord">
+          <NavIcon name="home" label="Dashboard" />
+          <span>Accueil</span>
+        </Link>
+        <Link href="/chantiers" className="nav-item" title="Chantiers">
+          <NavIcon name="chantiers" label="Chantiers" />
+          <span>Chantiers</span>
+        </Link>
+        {canList && (
+          <Link href="/hse" className="nav-item" title="HSE">
+            <NavIcon name="hse" label="HSE" />
+            <span>HSE</span>
+          </Link>
+        )}
+        {canList && (
+          <Link href="/ncr" className="nav-item" title="NCR">
+            <NavIcon name="ncr" label="NCR" />
+            <span>NCR</span>
+          </Link>
+        )}
+        <Link href="/ncr/nouveau" className="nav-item" title="Nouvelle NCR">
+          <NavIcon name="nouveau" label="Nouveau" />
+          <span>Nouveau</span>
+        </Link>
+      </nav>
     </main>
   );
 }
