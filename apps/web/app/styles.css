@@ -988,3 +988,40 @@ a {
   font-size: 11px;
   color: var(--text-soft);
 }
+
+/* Worksite cards */
+.worksite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.worksite-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(10,21,38,0.5);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.worksite-card:hover { border-color: rgba(31,125,255,0.2); }
+.worksite-card.active { border-color: rgba(31,125,255,0.4); box-shadow: 0 0 16px rgba(31,125,255,0.08); }
+
+.ws-card-body { display: flex; flex-direction: column; gap: 4px; }
+.ws-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ws-card-top h3 { margin: 0; font-size: 16px; }
+.ws-active-badge {
+  background: rgba(31,125,255,0.15); color: #6fb0ff;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+}
+.ws-card-stats { display: flex; gap: 12px; font-size: 12px; color: #5e7da8; margin-top: 6px; }
+.ws-open-btn {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  margin-top: 12px; padding: 8px;
+  background: rgba(31,125,255,0.08); border: 1px solid rgba(31,125,255,0.15);
+  color: #8fc0ff; border-radius: 8px; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 600; transition: all 0.2s;
+}
+.ws-open-btn:hover { background: rgba(31,125,255,0.15); border-color: rgba(31,125,255,0.3); }
