@@ -37,12 +37,47 @@ a {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 250px 1fr;
+  transition: grid-template-columns 0.25s ease;
 }
 
 .app-sidebar {
-  border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, #08121f 0%, var(--bg-sidebar) 100%);
-  padding: 18px 14px;
+  position: relative;
+  margin: 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0d1b2f 0%, #0a1526 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  transition: width 0.25s ease, padding 0.25s ease;
+  overflow: hidden;
+}
+
+.app-sidebar.collapsed {
+  width: 56px;
+  padding: 14px 8px;
+}
+
+.app-shell:has(.app-sidebar.collapsed) {
+  grid-template-columns: 56px 1fr;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #5e7da8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s;
+  z-index: 2;
+}
+
+.sidebar-toggle:hover {
+  color: #a0c4f0;
 }
 
 .brand {
@@ -51,15 +86,20 @@ a {
   gap: 10px;
   font-weight: 700;
   margin-bottom: 20px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .brand-icon {
   color: #53a4ff;
-  font-size: 15px;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .menu-group {
-  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .menu-title {
@@ -70,24 +110,35 @@ a {
 }
 
 .menu-link {
-  display: block;
-  color: #d7e5f8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #bcd5f0;
   text-decoration: none;
-  padding: 9px 10px;
-  border-radius: 8px;
-  margin-bottom: 4px;
+  padding: 10px 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
-  transition: 120ms ease;
+  transition: 150ms ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .menu-link:hover {
-  background: #12243d;
-  border-color: #2a4770;
+  background: rgba(31,125,255,0.1);
+  border-color: rgba(31,125,255,0.25);
+  color: #fff;
 }
 
 .menu-link.disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.menu-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
 }
 
 .app-content {
