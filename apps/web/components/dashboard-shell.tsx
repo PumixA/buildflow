@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
+import { fetchWorksites } from '../lib/api';
+import { Worksite } from '../lib/types';
 import { useWorksite } from '../lib/worksite';
 
 type DashboardShellProps = {
@@ -57,14 +59,27 @@ function NavSvg({ name, label }: { name: string; label?: string }) {
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, role, logout } = useAuth();
   const canList = !role || role === 'ADMIN' || role === 'RESPONSABLE_QSE' || role === 'DIRECTION_TRAVAUX';
-  const { worksite } = useWorksite();
+  const { worksite, openWorksite } = useWorksite();
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const [wsOpen, setWsOpen] = useState(false);
+  const [wsList, setWsList] = useState<Worksite[]>([]);
+  const wsRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href));
 
   useEffect(() => { setReady(true); }, []);
+  useEffect(() => {
+    if (ready) { fetchWorksites().then(setWsList).catch(() => {}); }
+  }, [ready]);
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (wsRef.current && !wsRef.current.contains(e.target as Node)) setWsOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
   useEffect(() => {
     if (ready && !isAuthenticated) router.replace('/login');
   }, [ready, isAuthenticated, router]);
@@ -74,13 +89,24 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
       <header className="top-header">
         <Link href="/" className="header-brand">BuildFlow</Link>
         <div className="header-right">
-          <p className="worksite-info">
-            {worksite ? (
-              <Link href="/chantiers"><strong>{worksite.name}</strong></Link>
-            ) : (
-              <Link href="/chantiers">aucun chantier</Link>
+          <div className="worksite-picker" ref={wsRef}>
+            <button className="ws-toggle" onClick={() => { setWsOpen(!wsOpen); if (!wsOpen && wsList.length === 0) fetchWorksites().then(setWsList).catch(() => {}); }}>
+              <span>{worksite?.name ?? 'Chantiers'}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+            </button>
+            {wsOpen && (
+              <div className="ws-dropdown">
+                {wsList.map((w) => (
+                  <button key={w.id} className={`ws-option${worksite?.id === w.id ? ' current' : ''}`}
+                    onClick={() => { openWorksite({ id: w.id, name: w.nom }); setWsOpen(false); }}>
+                    {w.nom}
+                    {worksite?.id === w.id && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                  </button>
+                ))}
+                <Link href="/chantiers" className="ws-option all" onClick={() => setWsOpen(false)}>Tous les chantiers →</Link>
+              </div>
             )}
-          </p>
+          </div>
           {ready && (
             <div className="user-group">
               {email && (
