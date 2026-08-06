@@ -96,11 +96,17 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
             </button>
             {wsOpen && (
               <div className="ws-dropdown">
-                {wsList.map((w) => (
-                  <button key={w.id} className={`ws-option${worksite?.id === w.id ? ' current' : ''}`}
+                {worksite && (
+                  <button key={worksite.id} className="ws-option current"
+                    onClick={() => setWsOpen(false)}>
+                    {worksite.nom ?? worksite.name}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  </button>
+                )}
+                {wsList.filter(w => w.id !== worksite?.id).map((w) => (
+                  <button key={w.id} className="ws-option"
                     onClick={() => { openWorksite({ id: w.id, name: w.nom }); setWsOpen(false); }}>
                     {w.nom}
-                    {worksite?.id === w.id && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
                   </button>
                 ))}
                 <Link href="/chantiers" className="ws-option all" onClick={() => setWsOpen(false)}>Tous les chantiers →</Link>
