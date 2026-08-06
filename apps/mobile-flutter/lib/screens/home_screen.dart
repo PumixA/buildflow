@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 10),
               _KpiCard(icon: Icons.check_circle_outline, value: '$_syncedCount', label: 'Synchronisés', color: AppColors.ok),
               const SizedBox(width: 10),
-              _KpiCard(icon: Icons.offline_bolt, value: 'OFF', label: 'Hors-ligne', color: AppColors.primary),
+              const _KpiCard(icon: Icons.offline_bolt, value: 'OFF', label: 'Hors-ligne', color: AppColors.primary),
             ],
           ),
           const SizedBox(height: 20),
