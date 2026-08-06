@@ -146,9 +146,16 @@ export default function LoginPage() {
         {/* Help */}
         <div className="login-help">
           <p>Comptes de test :</p>
+<<<<<<< HEAD
+          <code>chef@buildflow.io — Chef de chantier</code>
+          <code>qse@buildflow.io — Responsable QSE</code>
+          <code>dt@buildflow.io — Direction Travaux</code>
+          <code>admin@buildflow.io — Administrateur</code>
+=======
           <code>chef@buildflow.io</code>
           <code>qse@buildflow.io</code>
           <code>admin@buildflow.io</code>
+>>>>>>> origin/main
           <span className="login-help-pass">mdp: password / mfa: 123456</span>
         </div>
       </div>

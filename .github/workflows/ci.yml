@@ -15,6 +15,10 @@ on:
     branches:
       - dev
       - main
+<<<<<<< HEAD
+  workflow_dispatch:
+=======
+>>>>>>> origin/main
 
 permissions:
   contents: read

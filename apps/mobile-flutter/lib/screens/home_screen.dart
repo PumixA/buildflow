@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/auth_service.dart';
 import '../services/local_store.dart';
+<<<<<<< HEAD
+import '../services/roles.dart';
+=======
+>>>>>>> origin/main
 
 class HomeScreen extends StatefulWidget {
   final void Function(int index)? onNavigate;
@@ -98,6 +102,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
+<<<<<<< HEAD
+                    if (peutCreerNcr(AuthService.instance.role))
+                      Expanded(
+                        child: _QuickLink(
+                          icon: Icons.add_circle_outline,
+                          label: 'Déclarer\nune NCR',
+                          onTap: () => widget.onNavigate?.call(1),
+                        ),
+                      ),
+                    if (peutCreerNcr(AuthService.instance.role))
+                      const SizedBox(width: 8),
+=======
                     Expanded(
                       child: _QuickLink(
                         icon: Icons.add_circle_outline,
@@ -106,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
+>>>>>>> origin/main
                     Expanded(
                       child: _QuickLink(
                         icon: Icons.sync,

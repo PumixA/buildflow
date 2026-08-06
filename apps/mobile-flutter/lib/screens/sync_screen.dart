@@ -260,4 +260,8 @@ class _SeverityChip extends StatelessWidget {
       child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/main

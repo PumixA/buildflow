@@ -86,6 +86,12 @@ export default function NcrForm() {
 
   const complet = chantierNom && titre.trim() && description.trim() && photo;
 
+  const manquants: string[] = [];
+  if (!chantierNom) manquants.push('Chantier');
+  if (!titre.trim()) manquants.push('Titre');
+  if (!description.trim()) manquants.push('Description');
+  if (!photo) manquants.push('Photo du constat');
+
   return (
     <form
       onSubmit={soumettre}
@@ -173,6 +179,19 @@ export default function NcrForm() {
           La photo est transmise avec la NCR et sera visible dans la fiche détail.
         </span>
       </label>
+
+      {manquants.length > 0 && (
+        <div style={{
+          background: 'rgba(245,159,36,0.1)', border: '1px solid rgba(245,159,36,0.35)',
+          borderRadius: 8, padding: '10px 14px', fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 8
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59f24" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span style={{ color: '#fbbf24' }}>
+            Champs obligatoires manquants : <strong>{manquants.join(', ')}</strong>
+          </span>
+        </div>
+      )}
 
       <button
         type="submit"

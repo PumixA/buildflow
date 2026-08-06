@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { fetchWorksites } from '../lib/api';
+import { peutCreerNcr, peutListerNcr } from '../lib/roles';
 import { Worksite } from '../lib/types';
 import { useWorksite } from '../lib/worksite';
 
@@ -58,7 +59,8 @@ function NavSvg({ name, label }: { name: string; label?: string }) {
 
 export function DashboardShell({ title, children }: DashboardShellProps) {
   const { isAuthenticated, email, role, logout } = useAuth();
-  const canList = !role || role === 'ADMIN' || role === 'RESPONSABLE_QSE' || role === 'DIRECTION_TRAVAUX';
+  const peutVoirNcr = peutListerNcr(role);
+  const peutDeclarerNcr = peutCreerNcr(role);
   const { worksite, openWorksite } = useWorksite();
   const router = useRouter();
   const pathname = usePathname();
@@ -141,8 +143,8 @@ export function DashboardShell({ title, children }: DashboardShellProps) {
       <nav className="bottom-nav">
         <NavLink href="/" icon="home" label="Accueil" active={isActive('/')} />
         <NavLink href="/chantiers" icon="chantiers" label="Chantiers" active={isActive('/chantiers')} />
-        {canList && <NavLink href="/ncr" icon="ncr" label="NCR" active={isActive('/ncr')} />}
-        <NavLink href="/ncr/nouveau" icon="nouveau" label="Nouveau" active={isActive('/ncr/nouveau')} />
+        {peutVoirNcr && <NavLink href="/ncr" icon="ncr" label="NCR" active={isActive('/ncr')} />}
+        {peutDeclarerNcr && <NavLink href="/ncr/nouveau" icon="nouveau" label="Nouveau" active={isActive('/ncr/nouveau')} />}
       </nav>
     </main>
   );
